@@ -17,37 +17,16 @@ from mimetypes import guess_type
 from external.markdown import Markdown
 from external.smartypants import smartyPants
 from external.postutils import SlugifyUniquely
-from external.BeautifulSoup import BeautifulSoup
-
-# import xblog.metaWeblog 
-
-
-# Create your models here.
+# from external.BeautifulSoup import BeautifulSoup
+import BeautifulSoup
 
 STATUS_CHOICES=(('draft','Draft'),('publish','Published'),('private','Private'))
+# text filters
 FILTER_CHOICES=(
     ('markdown','Markdown'),
     ('html','HTML'),
     ('convert linebreaks','Convert linebreaks')
 )
-
-
-
-# text filters
-
-
-def xmlify(data):
-    return data
-    replaced=False
-    for let in data:
-        # fix non-unicodies.
-        if ord(let) > 127:
-            replaced=True
-            print "Replacing %s -> &%d;" % (let,ord(let) )
-            data = data.replace(let,"&#%d;" % ord(let))
-
-    return data
-
 
 filters={}
 def get_markdown(data):
@@ -78,6 +57,17 @@ def convert_linebreaks(data):
 filters['convert linebreaks']=convert_linebreaks
 filters['__default__']=convert_linebreaks
 
+def xmlify(data):
+    return data
+    replaced=False
+    for let in data:
+        # fix non-unicodies.
+        if ord(let) > 127:
+            replaced=True
+            print "Replacing %s -> &%d;" % (let,ord(let) )
+            data = data.replace(let,"&#%d;" % ord(let))
+
+    return data
 
 class LinkCategory(models.Model):
     """Categories for  the blogroll"""
@@ -87,13 +77,15 @@ class LinkCategory(models.Model):
     blog = models.ForeignKey('Blog')
     display_order = models.IntegerField(blank=True, null=True)
     
-    class Admin:
-        list_display = ('title',)
-        search_fields = ('title',)
+    # Admin moved to admin.py
+    #class Admin:
+    #    list_display = ('title',)
+    #    search_fields = ('title',)
 
     def __str__(self):
         return str(self.title)
     __repr__=__str__
+
 
 class Link(models.Model):
     """Blogroll Struct"""
@@ -110,11 +102,6 @@ class Link(models.Model):
     
     category = models.ForeignKey('LinkCategory')
     
-    class Admin:
-        #list_display = ('',)
-        #search_fields = ('',)
-        list_display = ('url', 'description')
-
     def __str__(self):
         return "%s (%s)" % (self.link_name, self.url)
     
@@ -135,12 +122,6 @@ class Pingback(models.Model):
     pub_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
     mod_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
     
-
-    class Admin:
-        # list_display = ('pub_date', 'title', 'source_url','target_url')
-        search_fields = ('title','pub_date',)
-        list_filter = ['pub_date', 'is_public']
-
     def __str__(self):
         return "Reply %s -> %s" % (self.source_url,self.target_url)
 
@@ -165,11 +146,6 @@ Target URL: %s
 class Tag(models.Model):
     """(Tag description)"""
     title = models.CharField(blank=True, max_length=100)
-
-    class Admin:
-        list_display = ('title',)
-        search_fields = ('title',)
-
     def __str__(self):
         # return "%s (%s - %s)" % (self.title, self.source_url, self.target_url)
         return self.title
@@ -184,25 +160,20 @@ class Author(models.Model):
     about = models.TextField(blank=True)
     avatar_height = models.IntegerField(blank=True, null=True)
     avatar_width = models.IntegerField(blank=True, null=True)
-    class Admin:
-        # list_display = ('',)
-        # search_fields = ('',)
-        pass
+    # moved to admin.py
+    #class Admin:
+    #    # list_display = ('',)
+    #    # search_fields = ('',)
+    #    pass
 
     def __str__(self):
         return "%s (%s)" % (self.fullname,self.user.username)
-
-
 
 class Category(models.Model):
     """Categories for Blog entries"""
     title = models.CharField(blank=True, max_length=100)
     description = models.CharField(blank=True, max_length=100)
     blog = models.ForeignKey("Blog")
-
-    class Admin:
-        list_display = ('title','blog')
-        search_fields = ('title',)
 
     def __str__(self):
         return self.title
@@ -212,43 +183,22 @@ class Post(models.Model):
     """A Blog Entry, natch"""
     # metadata
     pub_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
-    update_date = models.DateTimeField(blank=True, auto_now=True)  # default=datetime.datetime.now())
-    create_date = models.DateTimeField(blank=True, auto_now_add=True)  # default=datetime.datetime.now())
+    update_date = models.DateTimeField(blank=True, auto_now=True) 
+    create_date = models.DateTimeField(blank=True, auto_now_add=True)
     enable_comments = models.BooleanField(default=True)
     # post content 
     title = models.CharField(blank=False, max_length=255)
-    slug = models.SlugField(prepopulate_from=("title",), max_length=100)
+    slug = models.SlugField(max_length=100)
     body = models.TextField(blank=True)
     summary = models.TextField(blank=True)
     categories = models.ManyToManyField(Category)
     primary_category_name = models.ForeignKey(Category, related_name='primary_category_set', blank=True, null=True)
     tags = models.ManyToManyField(Tag, blank=True, null=True)
     blog = models.ForeignKey('Blog')
-    # authors = models.ManyToManyField(Author)
     author = models.ForeignKey(User)
-    status = models.CharField(blank=True, null=True, max_length=32, choices=STATUS_CHOICES, 
-        radio_admin=True,default="Draft")
-    
+    status = models.CharField(blank=True, null=True, max_length=32, choices=STATUS_CHOICES, default="Draft")
     # filter to display when "get_formatted_body" is called.
     text_filter = models.CharField(blank=True, max_length=100, choices=FILTER_CHOICES, default='__default__')
-
-
-    class Admin:
-        # list_display = ('title',)
-        list_display = ('title','pub_date','author','status')
-        search_fields = ('title','body','slug')
-        date_hierarchy = 'pub_date'
-        list_filter = ['author','pub_date', 'status', 'tags', 'categories']
-        
-        fields = (
-          (None, {'fields':('title','slug',)}),
-          ('Date & Time',{'fields':("pub_date",)}),
-          (None, {'fields':('text_filter','body',)}),
-          ('Metadata', {'fields':('tags','categories','blog','author','status','enable_comments')}),
-          ('Extras', {'fields':('update_date','create_date', 'summary',
-                                'primary_category_name', ), 'classes':'collapse'}),
-        )
-        
 
     def __str__(self):
         return self.title
@@ -431,10 +381,6 @@ class Blog(models.Model):
 
     objects = models.Manager()
     on_site = CurrentSiteManager()
-
-    class Admin:
-        list_display = ('title','owner')
-        search_fields = ('title',)
 
     def __str__(self):
         return self.title

@@ -7,7 +7,7 @@ Created by Eric Williams on 2007-02-21.
 """
 from django.contrib.auth.decorators import login_required
 from django.template import RequestContext, Context, loader
-from xcomments.models import FreeComment
+# from xcomments.models import FreeComment
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from xblog.models import *
 
@@ -69,12 +69,12 @@ def site_overview(request):
     
 
     latest_posts = Post.objects.all().order_by('-pub_date')[:10]
-    latest_comments = FreeComment.objects.all().order_by('-submit_date')[:10]
+    # latest_comments = FreeComment.objects.all().order_by('-submit_date')[:10]
     
     c['latest_feature'] = featurecat.post_set.order_by('-pub_date')
     print c['latest_feature']
     c['latest_posts']= latest_posts
-    c['latest_comments']= latest_comments
+    # c['latest_comments']= latest_comments
     c['frontlist']=frontlist
     
     context = RequestContext(request, c)

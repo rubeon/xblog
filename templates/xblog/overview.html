@@ -1,7 +1,5 @@
 {% extends "xblog/blog_base.html" %}
 {% load markup %}
-{% load comments %}
-
 {% block extratitle %}{{pagetitle}}{% endblock %}
 {% block navigation %}
 &nbsp;&rsaquo;<a href="/blog/">Blog </a>
@@ -10,7 +8,6 @@
 	<!-- begin main blog overview -->
 	{% for post in latest_posts %}
 	{% ifchanged %}<h2>{{ post.pub_date|date:"F d,Y"}}</h2>{% endifchanged %}
-	{% get_free_comment_count for xblog.post post.id as comment_count %}
 	<!-- a post -->
 	<div id="post-{{ post.id }}" class="item entry">
 		<div class="itemhead">

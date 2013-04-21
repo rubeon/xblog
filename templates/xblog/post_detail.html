@@ -6,8 +6,6 @@
 	
 {% endblock %}	
 {% block maincontent %}
-{% load comments %}
-{% get_free_comment_count for xblog.post object.id as comment_count %}
 <!-- a post -->
 <div id="post-{{ object.id }}" class="item entry">
 	<div class="itemhead">
@@ -37,10 +35,10 @@
 	</rdf:RDF> -->
 	<!-- begin comments -->
 
-
+{% comment %}
 	{% get_free_comment_count for xblog.post object.id as comment_count %}
 	{% get_free_comment_list for xblog.post object.id as comment_list %}
-
+{% endcomment %}
 
 	{% for pb in object.pingback_set.all %}
 	{% ifchanged %}<h3>Pingbacks</h3>
@@ -60,11 +58,14 @@
 		</div><!-- /comment-{{ comment.id }} -->
 	{% endfor %}
 	<div id="commentform">
+{% comment %}
 	{% if object.comment_period_open %}
 
 		{% free_comment_form for xblog.post object.id %}
 	{% else %}
 		<p>Comments for "{{ object.title }}" are closed.</p>
 	{% endif %}
+    
+{% endcomment %}
 	</div><!-- /commentform -->
 {% endblock %}

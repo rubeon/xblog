@@ -1,7 +1,11 @@
+{% comment %}
 {% extends "base_site.html" %}
+{% endcomment %}
 {% block extrahead %}
 {% load  blog_tags %}
+{% comment %}
 {% load thumbnail %}
+{% endcomment %}
 <meta name="description" content="{{blog.description}}" />
 <link rel="alternate" href="http://feeds.feedburner.com/youbitch/qGWn" type="application/rss+xml" title="RSS 2.0" />
 <link rel="EditURI" href="{{ site_url }}blog/xmlrpc/" type="application/rsd+xml" title="RSD" />
@@ -12,14 +16,9 @@
 {% block pagestyle %}blog{% endblock %}
 {% block leftnav %}{% endblock %}
 {% block rightnav %}
-{% load comments %}
 {% get_blogroll %}
 <div id="blogroll">
 	<h2>Latest Comments</h2>
-	<ul>{% for c in recent_comments %}
-		<li><small><a class="commentslink"  href="{{ c.person_url }}">{{ c.person_name }}</a> 
-	 		on <a href="{{ c.get_content_object.get_absolute_url }}#c{{ c.id }}">{{ c.get_content_object.title }}</a></small></li>
-	{% endfor %}</ul>
 	{% for cat in blogroll_categories %}
 	<h2>{{ cat.title }}</h2>
 	<ul>{% for link in cat.link_set.all|dictsort:"link_name" %}

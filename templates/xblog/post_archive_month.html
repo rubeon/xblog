@@ -2,12 +2,17 @@
 {% block pagetitle %}{{ thisblog.title }} Archive for {{month|date:"F Y" }}{% endblock %}
 {% block yearnav %}&nbsp;&rsaquo;<a href="../">{{month|date:"Y"}}</a>{% endblock %}{% block monthnav %}&nbsp;&rsaquo;{{month|date:"F"}}{% endblock %}
 {% block maincontent %}
+{% comment %}
 {% load comments %}
+{% endcomment %}
 {% for post in object_list %}
 {% ifchanged %}<p>Back to <a href="/blog/">Recent Post</a></p>{% endifchanged %}
 {% ifchanged %}<p>Back to <a href="{{ post.get_year_archive_url }}">{{ post.pub_date|date:"Y"}}</a></p>{% endifchanged %}
 {% ifchanged %}<h2><a href="{{ post.get_month_archive_url }}">{{ post.pub_date|date:"F"}}</a></h2>{% endifchanged %}
+
+{% comment %}
 {% get_free_comment_count for xblog.post post.id as comment_count %}
+{% endcomment %}
 <!-- a post -->
 <div id="post-{{ post.id }}" class="item entry">
 	<div class="itemhead">

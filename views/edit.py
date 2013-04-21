@@ -8,8 +8,8 @@ Created by Eric Williams on 2007-04-09.
 
 from django.contrib.auth.decorators import login_required
 from django.template import RequestContext, Context, loader
-from xcomments.models import FreeComment
-import django.newforms as forms
+# from xcomments.models import FreeComment
+from django import forms 
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from xblog.models import Post
 
