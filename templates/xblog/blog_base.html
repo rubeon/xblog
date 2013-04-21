@@ -1,0 +1,38 @@
+{% extends "base_site.html" %}
+{% block extrahead %}
+{% load  blog_tags %}
+{% load thumbnail %}
+<meta name="description" content="{{blog.description}}" />
+<link rel="alternate" href="http://feeds.feedburner.com/youbitch/qGWn" type="application/rss+xml" title="RSS 2.0" />
+<link rel="EditURI" href="{{ site_url }}blog/xmlrpc/" type="application/rsd+xml" title="RSD" />
+<link rel="archives" href="{{  site_url }}blog/archive/" title="Archives" charset="utf-8" />
+<link rel="pingback" href="{{ site_url }}blog/xmlrpc/" />
+{% endblock %}
+{% block pagetitle %}blog{% endblock %}
+{% block pagestyle %}blog{% endblock %}
+{% block leftnav %}{% endblock %}
+{% block rightnav %}
+{% load comments %}
+{% get_blogroll %}
+<div id="blogroll">
+	<h2>Latest Comments</h2>
+	<ul>{% for c in recent_comments %}
+		<li><small><a class="commentslink"  href="{{ c.person_url }}">{{ c.person_name }}</a> 
+	 		on <a href="{{ c.get_content_object.get_absolute_url }}#c{{ c.id }}">{{ c.get_content_object.title }}</a></small></li>
+	{% endfor %}</ul>
+	{% for cat in blogroll_categories %}
+	<h2>{{ cat.title }}</h2>
+	<ul>{% for link in cat.link_set.all|dictsort:"link_name" %}
+	   <li class="blogroll"><a href="{{link.url}}">{{ link.link_name }}</a></li>
+        {% endfor %}
+        </ul>
+{% endfor %}
+	<p class="blogrollheader">Archives</p>
+	{% get_blog_months %}
+	{% for month in blog_months %}
+	{% ifchanged %}{% if not forloop.first %}<br />{% endif %}<span class="blogrollheader"><a href="/blog/{{month.year}}">{{month|date:"Y"|lower}}</a></span><br />{% endifchanged %}
+		<a href="/blog/{{ month|date:"Y/M"|lower }}/" title="{{ month|date:"M Y" }}">{{ month|date:"M" }}</a>
+		{% ifequal month.month 6  %}<br />{% endifequal %}{% endfor %}
+	</div><!-- /blogroll -->
+{% endblock %}
+
