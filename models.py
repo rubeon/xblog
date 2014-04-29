@@ -2,7 +2,9 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from django.contrib.auth.models import User 
 from django.core.mail import mail_managers, send_mail
-from django.utils.text import truncate_html_words
+# from django.utils.text import truncate_html_words
+# replaced by the following
+from django.utils.text import Truncator
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.sites.managers import CurrentSiteManager
@@ -89,7 +91,7 @@ class LinkCategory(models.Model):
 
 class Link(models.Model):
     """Blogroll Struct"""
-    url = models.URLField(blank=True, verify_exists=True)
+    url = models.URLField(blank=True)
     link_name = models.CharField(blank=True, max_length=255)
     link_image = models.ImageField(upload_to="blog_uploads/links/", height_field='link_image_height', width_field='link_image_width',blank=True)
     link_image_height = models.IntegerField(blank=True, null=True)
@@ -98,7 +100,7 @@ class Link(models.Model):
     description = models.TextField(blank=True)
     visible = models.BooleanField(default=True)
     blog = models.ForeignKey('Blog')
-    rss = models.URLField(blank=True, verify_exists=True)
+    rss = models.URLField(blank=True)
     
     category = models.ForeignKey('LinkCategory')
     
@@ -117,8 +119,8 @@ class Pingback(models.Model):
     body = models.TextField(blank=True)
     is_public = models.BooleanField(default=False)
     
-    source_url = models.URLField(blank=True, verify_exists=True)
-    target_url = models.URLField(blank=True, verify_exists=False)
+    source_url = models.URLField(blank=True)
+    target_url = models.URLField(blank=True)
     pub_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
     mod_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
     
@@ -154,7 +156,7 @@ class Tag(models.Model):
 class Author(models.Model):
     """User guy"""
     fullname = models.CharField(blank=True, max_length=100)
-    url = models.URLField(blank=True, verify_exists=True)
+    url = models.URLField(blank=True)
     avatar = models.ImageField(blank=True, upload_to="users/avatars/", height_field='avatar_height', width_field='avatar_width')
     user = models.ForeignKey(User, unique=True)
     about = models.TextField(blank=True)
@@ -271,8 +273,10 @@ class Post(models.Model):
             
         # regen summary...
         
-        self.summary=truncate_html_words(filters.get(self.text_filter, convert_linebreaks)(self.body), 50)
-        
+        trunc = Truncator(filters.get(self.text_filter, convert_linebreaks)(self.body)).chars(50, html=True)
+        print "---"
+        print trunc
+        self.summary = trunc
         # save to create my ID for the manytomany thing
         super(self.__class__, self).save()
         # self.handle_technorati_tags()
