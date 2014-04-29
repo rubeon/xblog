@@ -6,10 +6,15 @@ urls.py
 Created by Eric Williams on 2007-02-27.
 """
 
-from django.conf.urls.defaults import *
+# from django.conf.urls.defaults import *
+# django.conf.urls.defaults will be removed. The functions 
+# include(), patterns() and url() plus handler404, handler500, 
+# are now available through django.conf.urls .
+
+from django.conf.urls import include, patterns, url
 from django.contrib.sitemaps import GenericSitemap
 
-from feeds import *
+from xblog.feeds import *
 from models import Post
 from views.sitemap import BlogSitemap
 
