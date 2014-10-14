@@ -54,7 +54,7 @@
 			<span class="comnum"><a id="c{{ comment.id }}" href="#c{{ comment.id }}"></a></span>
 			<h3><a href="{{comment.person_url}}">{{ comment.person_name }}</a></h3>
 		    <small class="postmeta"><a class="commentslink" href="{{ comment.person_url }}">{{ comment.submit_date|date:"F j, Y" }} at {{ comment.submit_date|date:"P" }}:</a></small>
-			{{ comment.comment|urlizetrunc:40|markdown:"footnotes" }}
+			{{ comment.comment|urlizetrunc:40 }}
 		</div><!-- /comment-{{ comment.id }} -->
 	{% endfor %}
 	<div id="commentform">

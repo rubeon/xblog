@@ -1,17 +1,26 @@
+# -*- coding: utf-8 -*-
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.contrib.auth.models import User 
 from django.core.mail import mail_managers, send_mail
-from django.utils.text import truncate_html_words
+try:
+    use_truncator = False
+    from django.utils.text import truncate_html_words 
+except ImportError:
+    use_truncator = True
+    from django.utils.text import Truncator
+    
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.sites.managers import CurrentSiteManager
 from external import fuzzyclock
+
 import datetime
 import time
 import os
 import string
-
+import logging
+logger = logging.getLogger("xblog")
 
 from mimetypes import guess_type
 from external.markdown import Markdown
@@ -30,8 +39,9 @@ FILTER_CHOICES=(
 
 filters={}
 def get_markdown(data):
+    logger.info('Filtering for markdown')
     m = Markdown(data, 
-                     extensions=['footnotes'],
+                     # extensions=['footnotes'],
                      # extension_configs= {'footnotes' : ('PLACE_MARKER','~~~~~~~~')},
                      encoding='utf8',
                      safe_mode = False
@@ -64,7 +74,7 @@ def xmlify(data):
         # fix non-unicodies.
         if ord(let) > 127:
             replaced=True
-            print "Replacing %s -> &%d;" % (let,ord(let) )
+            logger.debug("Replacing %s -> &%d;" % (let,ord(let) ))
             data = data.replace(let,"&#%d;" % ord(let))
 
     return data
@@ -89,7 +99,12 @@ class LinkCategory(models.Model):
 
 class Link(models.Model):
     """Blogroll Struct"""
-    url = models.URLField(blank=True, verify_exists=True)
+    # removing due to 
+    try:
+        url = models.URLField(blank=True, verify_exists=True)
+    except TypeError:
+        # verify_exists removed
+        url = models.URLField(blank=True)
     link_name = models.CharField(blank=True, max_length=255)
     link_image = models.ImageField(upload_to="blog_uploads/links/", height_field='link_image_height', width_field='link_image_width',blank=True)
     link_image_height = models.IntegerField(blank=True, null=True)
@@ -98,7 +113,11 @@ class Link(models.Model):
     description = models.TextField(blank=True)
     visible = models.BooleanField(default=True)
     blog = models.ForeignKey('Blog')
-    rss = models.URLField(blank=True, verify_exists=True)
+    try:
+        rss = models.URLField(blank=True, verify_exists=True)
+    except TypeError:
+        # verify_exists removed
+        rss = models.URLField(blank=True)
     
     category = models.ForeignKey('LinkCategory')
     
@@ -117,8 +136,14 @@ class Pingback(models.Model):
     body = models.TextField(blank=True)
     is_public = models.BooleanField(default=False)
     
-    source_url = models.URLField(blank=True, verify_exists=True)
-    target_url = models.URLField(blank=True, verify_exists=False)
+    try:
+        source_url = models.URLField(blank=True, verify_exists=True)
+        target_url = models.URLField(blank=True, verify_exists=False)
+    except TypeError:
+        # verify_exists removed
+        source_url = models.URLField(blank=True)
+        target_url = models.URLField(blank=True)
+        
     pub_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
     mod_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
     
@@ -138,8 +163,8 @@ Target URL: %s
       Time: %s
             """ % (self.source_url, self.target_url, self.pub_date)
             
-        print mail_subject
-        print mail_body
+        logger.debug(mail_subject)
+        logger.debug(mail_body)
         # mail_managers(mail_subject, mail_body, fail_silently=False)
         send_mail(mail_subject, mail_body, "eric@xoffender.de", [self.post.author.email])
         
@@ -154,7 +179,11 @@ class Tag(models.Model):
 class Author(models.Model):
     """User guy"""
     fullname = models.CharField(blank=True, max_length=100)
-    url = models.URLField(blank=True, verify_exists=True)
+    try:
+        url = models.URLField(blank=True, verify_exists=True)
+    except TypeError:
+        # verify_exists removed
+        url = models.URLField(blank=True)
     avatar = models.ImageField(blank=True, upload_to="users/avatars/", height_field='avatar_height', width_field='avatar_width')
     user = models.ForeignKey(User, unique=True)
     about = models.TextField(blank=True)
@@ -239,16 +268,16 @@ class Post(models.Model):
                 # seems to be taggy
                 tags.append(a.string)
                 
-        print tags
+        logger.debug(str(tags))
         taglist = []
         for tag in tags:
             # try to find the tag
             try:
                 t = Tag.objects.get(title__iexact=tag)
-                print "Got '%s'" % t
+                logger.info("Got '%s'" % t)
             except:
                 # not found, create tag
-                print "Creating '%s'" % tag
+                logger.warn("Creating '%s'" % tag)
                 t = Tag(title = tag)
                 t.save()
 
@@ -271,8 +300,14 @@ class Post(models.Model):
             
         # regen summary...
         
-        self.summary=truncate_html_words(filters.get(self.text_filter, convert_linebreaks)(self.body), 50)
-        
+        # 
+        val = self.get_formatted_body()
+        if use_truncator:
+
+            self.summary = Truncator(val).words(50, html=True, truncate="…")
+        else:
+            
+            self.summary=truncate_html_words(val, 50)
         # save to create my ID for the manytomany thing
         super(self.__class__, self).save()
         # self.handle_technorati_tags()
@@ -280,44 +315,63 @@ class Post(models.Model):
         # super(self.__class__, self).save()
         # check the outgoing pings...
         
+    def get_absolute_url(self):
+        blog_id = self.blog.id
+        datestr = self.pub_date.strftime("%Y/%b/%d")
+        return "/blog/%s/%s/" % (datestr.lower(), self.slug) 
+        
+        # from django.core.urlresolvers import reverse
+        # return reverse('post.views.details', args=[str(self.id)])
+    
     def get_archive_url(self):
         # returns the path in archive
-        archive_url = settings.SITE_URL + "blog/archive/"
+        
+        # archive_url = settings.SITE_URL + "blog/archive/"
+        # trying to phase out SITE_URL
+        archive_url = "/blog/archive/"
         return archive_url
         
     def get_year_archive_url(self):
-        return self.pub_date.strftime( settings.SITE_URL + "blog/%Y/").lower()
+        # return self.pub_date.strftime( settings.SITE_URL + "blog/%Y/").lower()
+        return self.pub_date.strftime("/blog/%Y/").lower()
         
     def get_month_archive_url(self):
-        return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b").lower()
+        # return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b").lower()
+        return self.pub_date.strftime("/blog/%Y/%b").lower()
         
     def get_day_archive_url(self):
-        return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b/%d").lower()
+        # return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b/%d").lower()
+        return self.pub_date.strftime("/blog/%Y/%b/%d").lower()
 
     def get_post_archive_url(self):
-        return self.get_absolute_url()  
+        logger.debug("----" + self.get_absolute_url())
+        return self.get_absolute_url()
         
     def get_trackback_url(self):
         # returns url for trackback pings.
         # return self.get_absolute_url() + "trackback/"
         # return "".join([settings.SITE_URL,, str(self.id)]) + "/"
-        return settings.SITE_URL + self.get_absolute_url()[1:] + "trackback/"
+        # return settings.SITE_URL + self.get_absolute_url()[1:] + "trackback/"
+        logger.debug("----" + self.get_absolute_url())
+        return self.get_absolute_url() + "trackback/"
     
-    def get_absolute_uri(self):
-        # returns a url for the interweb
-        blogid = self.blog.id
-        datestr = self.pub_date.strftime("%Y/%b/%d")
-        
-        # print self.slug
-        return settings.SITE_URL + "blog/%s/%s/" % (datestr.lower(), self.slug) 
+    # commenting this out so maybe the default Models.get_absolute_uri can be used...
+    # def get_absolute_uri(self):
+    #     # returns a url for the interweb
+    #     blogid = self.blog.id
+    #     datestr = self.pub_date.strftime("%Y/%b/%d")
+    #     
+    #     # print self.slug
+    #     return settings.SITE_URL + "blog/%s/%s/" % (datestr.lower(), self.slug) 
 
 
-    def get_absolute_url(self):
-        blogid = self.blog.id
-        datestr = self.pub_date.strftime("%Y/%b/%d")
-        
-        # print self.slug
-        return settings.SITE_URL +"blog/%s/%s/" % (datestr.lower(), self.slug) 
+    # commenting this out so maybe the default Models.get_absolute_uri can be used...
+    # def get_absolute_url(self):
+    #     blogid = self.blog.id
+    #     datestr = self.pub_date.strftime("%Y/%b/%d")
+    #     
+    #     # print self.slug
+    #     return settings.SITE_URL +"blog/%s/%s/" % (datestr.lower(), self.slug) 
 
     def get_site_url(self):
         """
@@ -386,7 +440,9 @@ class Blog(models.Model):
         return self.title
 
     def get_url(self):
-        return "".join([settings.SITE_URL,"blog","/", str(self.id)]) + "/"
+        # return "".join([settings.SITE_URL,"blog","/", str(self.id)]) + "/"
+        logger.debug( "----" + self.get_absolute_url())
+        return self.get_absolute_url()
         
         
         
