@@ -260,29 +260,14 @@ class Post(models.Model):
 
             
     def save(self):
-        # convert this crapola to unicode
-        # self.body = self.body.decode('utf-8')
-        # print self.body
-        #if not self.id:
-        #    # replace self.name with your prepopulate_from field
-        #    self.body = xmlify(self.body)
-        #    self.title = xmlify(self.title)
-            
         if not self.slug or self.slug=='':
             self.slug = SlugifyUniquely(self.title, self.__class__)
             
-        # regen summary...
-        
         trunc = Truncator(filters.get(self.text_filter, convert_linebreaks)(self.body)).chars(50, html=True)
         print "---"
         print trunc
         self.summary = trunc
-        # save to create my ID for the manytomany thing
         super(self.__class__, self).save()
-        # self.handle_technorati_tags()
-        # save again :-/
-        # super(self.__class__, self).save()
-        # check the outgoing pings...
         
     def get_archive_url(self):
         # returns the path in archive
