@@ -1,5 +1,5 @@
 {% extends "xblog/blog_base.html" %}
-{% block pagetitle %}{{ thisblog.title }} Yearly Archive for {{ year}}{% endblock %}
+{% block pagetitle %}{{ thisblog.title }} Yearly Archive for {{ year "Y" }}{% endblock %}
 {% block maincontent %}
 
 	{% for post in object_list %}

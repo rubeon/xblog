@@ -1,21 +1,24 @@
 {% extends "xblog/blog_base.html" %}
-{% load markup %}
+{% load markdown_deux_tags %}
 {% block extratitle %}
 Blog Archives
 {% endblock %}
 {% block navigation %}&nbsp;&rsaquo;<a href="/blog">Blog</a>&nbsp;&rsaquo;<a href="/blog/archive/">Archives</a>{% block yearnav %}{% endblock %}{% block monthnav %}{% endblock %}{% block daynav %}{% endblock %}{% block objectnav %}{% endblock %}
 	{% endblock %}
 {% block maincontent %}
-	<div id="content">
+	<section id="content">
 	{% for post in latest %}
 	{% ifchanged %}
 		<h2><a href="{{ post.get_year_archive_url}}">{{ post.pub_date|date:"Y" }}</h2>
 	{% endifchanged %}
 	{% ifchanged %}
 	<!-- links for day -->
-	<h3><a href="{{post.get_month_archive_url}}/">{{ post.pub_date|date:"F "}}</h3>{% endifchanged %}
-	<p><a href="{{ post.get_absolute_url }}">{{post.title}}</a></p>
-	<p class="postmeta"> Posted by {{ post.author.fullname }} at {{ post.pub_date|date:"P" }}  on {{ post.pub_date|date:"F j"}}</p>
+    <article>
+        <h3><a href="{{post.get_month_archive_url}}/">{{ post.pub_date|date:"F "}}</h3>{% endifchanged %}
+        <p><a href="{{ post.get_absolute_url }}">{{post.title}}</a></p>
+	    <small class="postmeta"> Posted by {{ post.author.fullname }} at {{ post.pub_date|date:"P" }}  on {{ post.pub_date|date:"F j"}}</small>
+        <p>{{ post.get_formatted_body|safe }}</p>
+    </article>
 	{% endfor %}
-	</div>
+	</section>
 {% endblock %}

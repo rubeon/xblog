@@ -22,7 +22,7 @@ def get_blog_months(parser, token):
     
 class MonthMenuObject(Node):
     def render(self, context):
-        context['blog_months'] = Post.objects.dates("pub_date", "month")
+        context['blog_months'] = Post.objects.datetimes("pub_date", "month")
         return ''
 
 class BlogRoll(Node):

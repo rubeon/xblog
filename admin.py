@@ -18,6 +18,7 @@ class PingbackAdmin(admin.ModelAdmin):
 admin.site.register(Pingback, PingbackAdmin)
 
 class TagAdmin(admin.ModelAdmin):
+
     list_display = ('title',)
     search_fields = ('title',)
 admin.site.register(Tag, TagAdmin)
@@ -33,7 +34,7 @@ admin.site.register(Category, CategoryAdmin)
 
 class PostAdmin(admin.ModelAdmin):
     # list_display = ('title',)
-    list_display = ('title','pub_date','author','status')
+    list_display = ('title','pub_date') #,'author','status')
     search_fields = ('title','body','slug')
     date_hierarchy = 'pub_date'
     list_filter = ['author','pub_date', 'status', 'tags', 'categories']
