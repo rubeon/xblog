@@ -23,18 +23,19 @@ from models import Post
 
 year_archive_pattern=r'^(?P<year>\d{4})/$'
 month_archive_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/$'
-day_archive_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{2})/$'
+day_archive_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/$'
 
-date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{2})/(?P<slug>[-\w]+)/$'
+# date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{2})/(?P<slug>[-\w]+)/$'
 date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/$'
 
+PAGE_LENGTH=10
 
 urlpatterns = patterns('',
-    url(year_archive_pattern, YearArchiveView.as_view(model=Post, date_field="pub_date")),
-    url(month_archive_pattern, MonthArchiveView.as_view(model=Post, date_field="pub_date")),
-    url(day_archive_pattern, DayArchiveView.as_view(model=Post, date_field="pub_date")),
-    url(date_detail_pattern, DateDetailView.as_view(model=Post, date_field="pub_date")),
-    url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date")),
+    url(year_archive_pattern, YearArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="year-archive"),
+    url(month_archive_pattern, MonthArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="month-archive"),
+    url(day_archive_pattern, DayArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="day-archive"),
+    url(date_detail_pattern, DateDetailView.as_view(model=Post, date_field="pub_date",), name='post-detail'),
+    url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name='archive-index',),
 )
 
 

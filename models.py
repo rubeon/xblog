@@ -13,14 +13,16 @@ import datetime
 import time
 import os
 import string
+from django.core.urlresolvers import reverse
 
 
 from mimetypes import guess_type
-from external.markdown import Markdown
-from external.smartypants import smartyPants
-from external.postutils import SlugifyUniquely
-# from external.BeautifulSoup import BeautifulSoup
+# from external.markdown import Markdown
+# from external.smartypants import smartyPants
+# from external.postutils import SlugifyUniquely
+# # from external.BeautifulSoup import BeautifulSoup
 import BeautifulSoup
+import markdown2
 
 STATUS_CHOICES=(('draft','Draft'),('publish','Published'),('private','Private'))
 # text filters
@@ -32,14 +34,15 @@ FILTER_CHOICES=(
 
 filters={}
 def get_markdown(data):
-    m = Markdown(data, 
-                     extensions=['footnotes'],
-                     # extension_configs= {'footnotes' : ('PLACE_MARKER','~~~~~~~~')},
-                     encoding='utf8',
-                     safe_mode = False
-                     )
-    res = m.toString()
-    res = smartyPants(res, "1qb")
+    # m = Markdown(data, 
+    #                  extensions=['footnotes'],
+    #                  # extension_configs= {'footnotes' : ('PLACE_MARKER','~~~~~~~~')},
+    #                  encoding='utf8',
+    #                  safe_mode = False
+    #                  )
+    # res = m.toString()
+    # res = smartyPants(res, "1qb")
+    res = markdown2.markdown(data, extras=['footnotes','fenced-code-blocks','smartypants'])
     return res
     
 filters['markdown']=get_markdown
@@ -47,14 +50,15 @@ filters['markdown']=get_markdown
 def get_html(data):
     # just return it.
     # maybe tidy it up or something...
-    data = smartyPants(data, "1qb")
+    # data = smartyPants(data, "1qb")
     return data
 
 filters['html']=get_html
 
 def convert_linebreaks(data):
     data = data.replace("\n", "<br />")
-    return smartyPants(data,"1qb")
+    # return smartyPants(data,"1qb")
+    return data
 
 filters['convert linebreaks']=convert_linebreaks
 filters['__default__']=convert_linebreaks
@@ -275,13 +279,31 @@ class Post(models.Model):
         return archive_url
         
     def get_year_archive_url(self):
-        return self.pub_date.strftime( settings.SITE_URL + "blog/%Y/").lower()
+        # return self.pub_date.strftime( settings.SITE_URL + "blog/%Y/").lower()
+        kwargs = {
+            "year": self.pub_date.year,
+        }
+        return reverse("year-archive", kwargs=kwargs)
         
     def get_month_archive_url(self):
-        return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b").lower()
+        # return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b").lower()
+        kwargs = {
+            "year": self.pub_date.year,
+            'month': self.pub_date.strftime("%b").lower(),
+        }
+        return reverse("month-archive", kwargs=kwargs)
+        
         
     def get_day_archive_url(self):
-        return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b/%d").lower()
+        # return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b/%d").lower()
+        kwargs = {
+            "year": self.pub_date.year,
+            'month': self.pub_date.strftime("%b").lower(),
+            'day': self.pub_date.day,
+
+        }
+        return reverse("day-archive", kwargs=kwargs)
+
 
     def get_post_archive_url(self):
         return self.get_absolute_url()  
@@ -302,11 +324,18 @@ class Post(models.Model):
 
 
     def get_absolute_url(self):
-        blogid = self.blog.id
-        datestr = self.pub_date.strftime("%Y/%b/%d")
-        
-        # print self.slug
-        return settings.SITE_URL +"blog/%s/%s/" % (datestr.lower(), self.slug) 
+        # blogid = self.blog.id
+        # datestr = self.pub_date.strftime("%Y/%b/%d")
+        # 
+        # # print self.slug
+        # return settings.SITE_URL +"blog/%s/%s/" % (datestr.lower(), self.slug) 
+        kwargs = {
+            'slug': self.slug,
+            'year': self.pub_date.year,
+            'month': self.pub_date.strftime("%b").lower(),
+            'day': self.pub_date.day,
+        }
+        return reverse("post-detail", kwargs=kwargs)
 
     def get_site_url(self):
         """
@@ -327,7 +356,7 @@ class Post(models.Model):
     get_full_body.allow_tags = True
     
     def get_formatted_body(self, split=True):
-        """ returns the markdown-formatted version of the body text"""
+        """ returns the formatted version of the body text"""
         # check for 'more' tag
         if split and self.body.find('<!--more-->') > -1:
             # this is split.
@@ -336,7 +365,7 @@ class Post(models.Model):
         else:
             b = self.body
             splitted = False
-            
+        
         textproc = filters.get(self.text_filter, convert_linebreaks)
         b = textproc(b)
         if splitted:

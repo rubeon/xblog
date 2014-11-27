@@ -65,7 +65,7 @@ class PostAdmin(admin.ModelAdmin):
 admin.site.register(Post, PostAdmin)
 
 class BlogAdmin(admin.ModelAdmin):
-    list_display = ('title','owner')
+    list_display = ('title',)
     search_fields = ('title',)
 admin.site.register(Blog, BlogAdmin)
 

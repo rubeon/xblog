@@ -7,13 +7,17 @@
 {% endblock %}	
 {% block maincontent %}
 <!-- a post -->
+
+{% include "includes/post_template.txt" %}
+
+{% comment %}
 <div id="post-{{ object.id }}" class="item entry">
 	<div class="itemhead">
 		<h3><a href="{{ object.get_absolute_url }}" title="{{ object.title }}">
 		{{ object.title|safe}}
 		</a></h3>
 		<small class="metadata">
-			<span class="chronodata">Posted by <span class="vcard author">{{ object.author.get_profile.fullname }}</span> 
+			<span class="chronodata">Posted by <span class="vcard author">{{ object.author.get_profile.fullname }}</span> on 
 			in 
 			<span class="entry-category">{{ object.categories.all|join:","}}</span> at {{ object.pub_date|date:"P"}} on {{ object.pub_date|date:"N dS, Y"}}<br />
 			<a class="commentslink" href="#comments" title="Comments on {{ object.title }}">{{ comment_count  }} Comments</a>  <a class="pingbacklink" href="#pingbacks" title="Pingbacks on {{ object.title }}">{{ object.get_pingback_count }} Pings</a></span>
@@ -28,14 +32,13 @@
 	<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 				xmlns:dc="http://purl.org/dc/elements/1.1/"
 				xmlns:trackback="http://madskills.com/public/xml/rss/module/trackback/">
-			<rdf:Description rdf:about="{{ object.get_absolute_uri}}"
-	    		dc:identifier="{{ object.get_absolute_uri }}"
+			<rdf:Description rdf:about="{{ object.get_absolute_url}}"
+	    		dc:identifier="{{ object.get_absolute_url }}"
 			dc:title="{{ object.title }}"
-			trackback:ping="{{ object.get_absolute_uri }}trackback/" />
+			trackback:ping="{{ object.get_absolute_url }}trackback/" />
 	</rdf:RDF> -->
 	<!-- begin comments -->
 
-{% comment %}
 	{% get_free_comment_count for xblog.post object.id as comment_count %}
 	{% get_free_comment_list for xblog.post object.id as comment_list %}
 {% endcomment %}
@@ -47,6 +50,7 @@
 			<span class="comnum"><a href="{{pb.source_url}}">{{ pb.title }}</a>&rarr;<a href="{{ pb.target_url }}"></a></span>
 		</div><!-- /comment -->
 	{% endfor %}
+    {% comment %}
 	<a id="comments"></a>
 	<h3>Comments</h3>
 	{% for comment in comment_list %}
@@ -57,6 +61,7 @@
 			{{ comment.comment|urlizetrunc:40|markdown:"footnotes" }}
 		</div><!-- /comment-{{ comment.id }} -->
 	{% endfor %}
+    {% endcomment %}
 	<div id="commentform">
 {% comment %}
 	{% if object.comment_period_open %}

@@ -1,5 +1,6 @@
 {% extends "xblog/blog_base.html" %}
 {% load markdown_deux_tags %}
+{% load bootstrap3 %}
 {% block extratitle %}
 Blog Archives
 {% endblock %}
@@ -7,18 +8,34 @@ Blog Archives
 	{% endblock %}
 {% block maincontent %}
 	<section id="content">
-	{% for post in latest %}
+	{% for object in latest %}
 	{% ifchanged %}
-		<h2><a href="{{ post.get_year_archive_url}}">{{ post.pub_date|date:"Y" }}</h2>
-	{% endifchanged %}
-	{% ifchanged %}
+        <h3><a href="{{object.get_day_archive_url}}/">{{ object.pub_date|date:"F d, Y" }}</h3>
+    {% endifchanged %}
 	<!-- links for day -->
-    <article>
-        <h3><a href="{{post.get_month_archive_url}}/">{{ post.pub_date|date:"F "}}</h3>{% endifchanged %}
-        <p><a href="{{ post.get_absolute_url }}">{{post.title}}</a></p>
-	    <small class="postmeta"> Posted by {{ post.author.fullname }} at {{ post.pub_date|date:"P" }}  on {{ post.pub_date|date:"F j"}}</small>
-        <p>{{ post.get_formatted_body|safe }}</p>
-    </article>
+    {% include "includes/post_template.txt" %}
 	{% endfor %}
 	</section>
+    
+      {% block pager %}
+      <!-- post_archive.html -->
+        <nav>
+          <ul class="pager">
+          {% if page_obj.has_previous %}
+            <li>
+                <a href="?page={{ page_obj.previous_page_number }}">
+                {% bootstrap_icon "circle-arrow-left" %} Previous
+               </a>
+            </li>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <li>
+                <a href="?page={{ page_obj.next_page_number }}">
+                    Next {% bootstrap_icon "circle-arrow-right" %}
+                </a>
+            </li>
+          {% endif %}
+          </ul>
+        </nav>
+      {% endblock %}
 {% endblock %}
