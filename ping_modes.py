@@ -4,6 +4,9 @@
 trackbacktest.py
 
 Created by Eric Williams on 2007-04-04.
+
+Need to audit this for convert_logging
+
 """
 from xml.sax.handler import ContentHandler
 from xml.sax import parseString, SAXParseException
