@@ -76,7 +76,7 @@ def xmlify(data):
         # fix non-unicodies.
         if ord(let) > 127:
             replaced=True
-            print "Replacing %s -> &%d;" % (let,ord(let) )
+            logger.info("Replacing %s -> &%d;" % (let,ord(let) ))
             data = data.replace(let,"&#%d;" % ord(let))
 
     return data
@@ -150,8 +150,8 @@ Target URL: %s
       Time: %s
             """ % (self.source_url, self.target_url, self.pub_date)
             
-        print mail_subject
-        print mail_body
+        logger.debug(mail_subject)
+        logger.debug(mail_body)
         # mail_managers(mail_subject, mail_body, fail_silently=False)
         send_mail(mail_subject, mail_body, "eric@xoffender.de", [self.post.author.email])
         
@@ -179,7 +179,7 @@ class Author(models.Model):
     #    pass
 
     def get_avatar_url(self):
-        print self, "Getting avatar url"
+        logger.debug("%s: %s" % (self, "Getting avatar url"))
         return self.avatar.url
     def __str__(self):
         return "%s (%s)" % (self.fullname,self.user.username)
@@ -226,6 +226,7 @@ class Post(models.Model):
         
     
     def prepopulate(self):
+        logger.debug("prepopulate entered for %s" % self)
         if not self.slug or self.slug=='':
             self.slug = SlugifyUniquely(self.title, self.__class__)
             
@@ -237,6 +238,7 @@ class Post(models.Model):
     def handle_technorati_tags(self):
         # takes the post, and returns the technorati links in them...
         # from ecto:
+        logger.debug("handle_technorati_tags entered for %s" % self)
         start_tag = "<!-- technorati tags start -->"
         end_tag = "<!-- technorati tags end -->"
         text = self.body
@@ -254,16 +256,16 @@ class Post(models.Model):
                 # seems to be taggy
                 tags.append(a.string)
                 
-        print tags
+        logger.debug("Tags: %s" % str(tags))
         taglist = []
         for tag in tags:
             # try to find the tag
             try:
                 t = Tag.objects.get(title__iexact=tag)
-                print "Got '%s'" % t
+                logger.info("Got Tag: '%s'" % t)
             except:
                 # not found, create tag
-                print "Creating '%s'" % tag
+                logger.info("Creating '%s'" % tag)
                 t = Tag(title = tag)
                 t.save()
 
@@ -273,7 +275,7 @@ class Post(models.Model):
 
             
     def save(self):
-        logger.debug("Post.save entered")
+        logger.debug("Post.save entered for %s" % self)
         if not self.slug or self.slug=='':
             self.slug = SlugifyUniquely(self.title, self.__class__)
             
@@ -286,11 +288,13 @@ class Post(models.Model):
         
     def get_archive_url(self):
         # returns the path in archive
+        logger.debug("get_archive_url entered for %s" % self)
         archive_url = settings.SITE_URL + "blog/archive/"
         return archive_url
         
     def get_year_archive_url(self):
         # return self.pub_date.strftime( settings.SITE_URL + "blog/%Y/").lower()
+        logger.debug("get_year_archive_url entered for %s" % self)
         kwargs = {
             "year": self.pub_date.year,
         }
@@ -298,6 +302,7 @@ class Post(models.Model):
         
     def get_month_archive_url(self):
         # return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b").lower()
+        logger.debug("get_month_archive_url entered for %s" % self)
         kwargs = {
             "year": self.pub_date.year,
             'month': self.pub_date.strftime("%b").lower(),
@@ -337,11 +342,7 @@ class Post(models.Model):
 
 
     def get_absolute_url(self):
-        # blogid = self.blog.id
-        # datestr = self.pub_date.strftime("%Y/%b/%d")
-        # 
-        # # print self.slug
-        # return settings.SITE_URL +"blog/%s/%s/" % (datestr.lower(), self.slug) 
+        logger.debug("get_absolute_url entered for %s" % self)
         kwargs = {
             'slug': self.slug,
             'year': self.pub_date.year,
@@ -370,6 +371,7 @@ class Post(models.Model):
     
     def get_formatted_body(self, split=True):
         """ returns the formatted version of the body text"""
+        logger.debug("get_formatted_body entered for %s" % self)
         # check for 'more' tag
         if split and self.body.find('<!--more-->') > -1:
             # this is split.
@@ -383,15 +385,13 @@ class Post(models.Model):
         b = textproc(b)
         if splitted:
             b += """<p><a href="%s">Continue reading "%s"</p>""" % (self.get_absolute_url(), self.title)
-
-        # print res
         return b
     
     # newness?
     get_formatted_body.allow_tags = True
             
     def get_fuzzy_pub_date(self):
-
+        logger.debug("get_fuzzy_pub_date entered for %s" % self)
         h = self.pub_date.hour
         m = self.pub_date.minute
         fc = fuzzyclock.FuzzyClock()
@@ -401,6 +401,7 @@ class Post(models.Model):
         return res
         
     def get_pingback_count(self):
+        logger.debug("get_pingback_count entered for %s" % self)
         return len(self.pingback_set.all())
         
 class Blog(models.Model):
