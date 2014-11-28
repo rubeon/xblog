@@ -5,7 +5,9 @@
 
 {% block extrahead %}
 <meta name="description" content="{{blog.description}}" />
+{% comment %}
 <link rel="alternate" href="http://feeds.feedburner.com/youbitch/qGWn" type="application/rss+xml" title="RSS 2.0" />
+{% endcomment %}
 <link rel="EditURI" href="{{ site_url }}blog/xmlrpc/" type="application/rsd+xml" title="RSD" />
 <link rel="archives" href="{{  site_url }}blog/archive/" title="Archives" charset="utf-8" />
 <link rel="pingback" href="{{ site_url }}blog/xmlrpc/" />
