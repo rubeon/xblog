@@ -1,2 +1,16 @@
-{% extends "xblog/post_archive_month.html" %}
-{% block yearnav %}&nbsp;&rsaquo;<a href="../../">{{day|date:"Y"}}</a>{% endblock %}{% block monthnav %}&nbsp;&rsaquo;<a href="..">{{day|date:"F"}}</a>{% endblock %}&nbsp;&rsaquo;{% block daynav %}&nbsp;&rsaquo;{{day|date:"d"}}{% endblock %}
+{% extends "xblog/post_archive.html" %}
+{% load bootstrap3 %}
+
+{% block maincontent %}
+	{% for object in object_list reversed %}
+	{% ifchanged %}
+        <h3><a href="{{object.get_day_archive_url}}">{{ object.pub_date|date:"F d, Y" }}</h3>
+    {% endifchanged %}
+	<!-- links for day -->
+    {% include "includes/post_template.txt" %}
+	{% endfor %}    
+      {% block pager %}
+      <!-- post_archive.html -->
+      {% include "includes/pager_template.txt" %}
+      {% endblock %}
+{% endblock %}

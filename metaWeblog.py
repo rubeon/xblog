@@ -15,15 +15,22 @@ import os
 import urlparse
 import sys
 from django.contrib.auth.models import User
-from django.contrib.comments.models import FreeComment
+# from django.contrib.comments.models import FreeComment
 from django.conf import settings
 from xblog.models import Tag, Post, Blog, Author, Category, FILTER_CHOICES
 from views.xmlrpc_views import public
-from external.BeautifulSoup import BeautifulSoup
+import BeautifulSoup
 from ping_modes import send_pings
 
 # import config
 # import xmlrpclib.DateTime
+
+# I guess it's time to fix that upload issue...
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+
+import logging
+logger = logging.getLogger("xblog")
 
 def authenticated(pos=1):
     # tells the method that the visitor is authenticated
@@ -78,40 +85,49 @@ def metaWeblog_getCategories(user, blogid, struct={}):
 def metaWeblog_newMediaObject(user, blogid, struct):
     """ returns struct with url..."""
     print "metaWeblog_newMediaObject called"
-    upload_dir = os.path.join(settings.MEDIA_ROOT,'blog_uploads',user.username)
-    upload_url = "%s/%s/%s" % (settings.MEDIA_URL, 'blog_uploads', urllib.quote(user.username))
-    print upload_dir
-    print upload_url
-    # print "Using upload", upload_url
-    # print "Using upload dir", upload_dir
-    if not os.path.exists(upload_dir):
-        # create this directory....
-        # print "Creating directory", upload_dir
-        os.makedirs(upload_dir)
+    # upload_dir = os.path.join(settings.MEDIA_ROOT,'blog_uploads',user.username)
+    # upload_url = "%s/%s/%s" % (settings.MEDIA_URL, 'blog_uploads', urllib.quote(user.username))
+    # 
+    # print upload_dir
+    # print upload_url
+    # # print "Using upload", upload_url
+    # # print "Using upload dir", upload_dir
+    # if not os.path.exists(upload_dir):
+    #     # create this directory....
+    #     # print "Creating directory", upload_dir
+    #     os.makedirs(upload_dir)
 
+    upload_dir = "blog_uploads/%s" % urllib.quote(user.username)
     
     bits       = struct['bits']
     mime       = struct['type']
     name       = struct['name']
+    
     # print "got", mime, name
     savename   = name
-    if os.path.isabs(savename):
-       # some schmoe program wrote a slash at the beginning...
-       savename = "." + savename # take that...
+    # if os.path.isabs(savename):
+    #    # some schmoe program wrote a slash at the beginning...
+    #    savename = "." + savename # take that...
 
-    print savename
-    renametmpl = "%2d-%s"
-    i          = 1
-    while os.path.exists(os.path.join(upload_dir,savename)):
-        savename = renametmpl % (i,savename)
-        i = i + 1
+    print "savename", savename
+    # renametmpl = "%2d-%s"
+    # i = 1
+    # while os.path.exists(os.path.join(upload_dir,savename)):
+    #     savename = renametmpl % (i,savename)
+    #     i = i + 1
 
-    print "Saving to ",os.path.join(upload_dir,savename)
-    f = open(os.path.join(upload_dir,savename),'w')
-    f.write("%s" % bits)
-    f.close()
+    save_path = os.path.join(upload_dir, savename)
+    print "Saving to ", save_path
+    # f = open(os.path.join(upload_dir,savename),'w')
+    
+    path = default_storage.save(save_path, ContentFile(bits))
+    print "Path:", path
+    
+    # f.write("%s" % bits)
+    # f.close()
     res = {}
-    res['url']="%s/%s" % (upload_url,savename)
+    res['url']= default_storage.url(path)
+    print res
     return res
 
 
@@ -120,7 +136,7 @@ def metaWeblog_newMediaObject(user, blogid, struct):
 @authenticated()
 def metaWeblog_newPost(user, blogid, struct, publish):
     """ mt's newpost function..."""
-    # print "metaWeblog.newPost called"
+    print "metaWeblog.newPost called"
     body = struct['description']
     author = user # Author.objects.get(user=user)
     blog = Blog.objects.get(pk=blogid)
@@ -140,16 +156,18 @@ def metaWeblog_newPost(user, blogid, struct, publish):
     post.prepopulate()
     # print "Saving"
     post.save()
-    # print "Setting Tags"
+    logger.info("Setting Tags")
     setTags(post, struct)
     # print "Handling Pings"
+    logger.info("sending pings to host")
     send_pings(post)
-    # print "newPost finished"
+    logger.debug("newPost finished")
     return post.id
     
 @public
 @authenticated()
 def metaWeblog_editPost(user, postid, struct, publish):
+    print "metaWeblog_editPost"
     post = Post.objects.get(id=postid)
     title = struct.get('title', None)
     if title is not None:
@@ -272,7 +290,6 @@ def blogger_getUsersBlogs(user, appkey):
     } for blog in usersblogs
     ]
     print res
-
     return res
 
 @public

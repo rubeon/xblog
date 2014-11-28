@@ -1,25 +1,28 @@
 {% extends "xblog/blog_base.html" %}
-{% block pagetitle %}{{ thisblog.title }} Yearly Archive for {{ year}}{% endblock %}
+{% block pagetitle %}{{ thisblog.title }} Yearly Archive for {{ year }}{% endblock %}
 {% block maincontent %}
 
-	{% for post in object_list %}
-	{% ifchanged %}<h2><a href="{{ post.get_month_archive_url }}">{{ post.pub_date|date:"F Y"}}</a></h2>{% endifchanged %}
+	{% for object in object_list %}
+	{% ifchanged %}<h2><a href="{{ object.get_month_archive_url }}">{{ object.pub_date|date:"F Y"}}</a></h2>{% endifchanged %}    
+    {% include "includes/post_template.html" %}
+    
 	{% comment %}
-    {% get_free_comment_count for xblog.post post.id as comment_count %}
-    {% endcomment %}
+    {% get_free_comment_count for xblog.post object.id as comment_count %}
 	<!-- a post -->
-	<div id="post-{{ post.id }}" class="item entry">
+	<div id="post-{{ object.id }}" class="item entry">
 		<div class="itemhead">
-			<h3><a href="{{ post.get_absolute_url }}" title="{{ post.title }}">{{ post.title}}</a></h3>
+			<h3><a href="{{ object.get_absolute_url }}" title="{{ object.title }}">{{ object.title}}</a></h3>
 			<small class="metadata">
-				<span class="chronodata">Posted by <span class="vcard author">{{ post.author.get_profile.fullname }}</span> 
+				<span class="chronodata">Posted by <span class="vcard author">{{ object.author.get_profile.fullname }}</span> 
 				in 
-				<span class="entry-category">{{ post.categories.all|join:","}}</span> at {{ post.pub_date|date:"P" }} on {{ post.pub_date|date:"F j" }}<br />
-				<a class="commentslink" href="{{ post.get_absolute_url}}#comments" title="Comments on {{ post.title }}">{{ comment_count  }} Comments</a>  <a class="pingbacklink" href="{{ post.get_absolute_url }}#pingbacks" title="Pingbacks on {{ post.title }}">{{ post.get_pingback_count }} Pings</a>
+				<span class="entry-category">{{ object.categories.all|join:","}}</span> at {{ object.pub_date|date:"P" }} on {{ object.pub_date|date:"F j" }}<br />
+				<a class="commentslink" href="{{ object.get_absolute_url}}#comments" title="Comments on {{ object.title }}">{{ comment_count  }} Comments</a>  <a class="pingbacklink" href="{{ object.get_absolute_url }}#pingbacks" title="Pingbacks on {{ object.title }}">{{ object.get_pingback_count }} Pings</a>
 			</small>	
 		</div><!-- /itemhead -->
 	</div>
 	<!-- /a post -->
+    {% endcomment %}
 
-	{% endfor %}
+
+{% endfor %}
 {% endblock %}

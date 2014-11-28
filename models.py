@@ -2,7 +2,9 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from django.contrib.auth.models import User 
 from django.core.mail import mail_managers, send_mail
-from django.utils.text import truncate_html_words
+# from django.utils.text import truncate_html_words
+# replaced by the following
+from django.utils.text import Truncator
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.sites.managers import CurrentSiteManager
@@ -11,14 +13,22 @@ import datetime
 import time
 import os
 import string
-
+from django.core.urlresolvers import reverse
+# from cumulus.storage import SwiftclientStorage
+# openstack_storage = SwiftclientStorage()
 
 from mimetypes import guess_type
-from external.markdown import Markdown
-from external.smartypants import smartyPants
+# from external.markdown import Markdown
+# from external.smartypants import smartyPants
 from external.postutils import SlugifyUniquely
-# from external.BeautifulSoup import BeautifulSoup
+# # from external.BeautifulSoup import BeautifulSoup
 import BeautifulSoup
+import markdown2
+
+import logging
+logger = logging.getLogger(__name__)
+
+
 
 STATUS_CHOICES=(('draft','Draft'),('publish','Published'),('private','Private'))
 # text filters
@@ -30,14 +40,15 @@ FILTER_CHOICES=(
 
 filters={}
 def get_markdown(data):
-    m = Markdown(data, 
-                     extensions=['footnotes'],
-                     # extension_configs= {'footnotes' : ('PLACE_MARKER','~~~~~~~~')},
-                     encoding='utf8',
-                     safe_mode = False
-                     )
-    res = m.toString()
-    res = smartyPants(res, "1qb")
+    # m = Markdown(data, 
+    #                  extensions=['footnotes'],
+    #                  # extension_configs= {'footnotes' : ('PLACE_MARKER','~~~~~~~~')},
+    #                  encoding='utf8',
+    #                  safe_mode = False
+    #                  )
+    # res = m.toString()
+    # res = smartyPants(res, "1qb")
+    res = markdown2.markdown(data, extras=['footnotes','fenced-code-blocks','smartypants'])
     return res
     
 filters['markdown']=get_markdown
@@ -45,14 +56,15 @@ filters['markdown']=get_markdown
 def get_html(data):
     # just return it.
     # maybe tidy it up or something...
-    data = smartyPants(data, "1qb")
+    # data = smartyPants(data, "1qb")
     return data
 
 filters['html']=get_html
 
 def convert_linebreaks(data):
     data = data.replace("\n", "<br />")
-    return smartyPants(data,"1qb")
+    # return smartyPants(data,"1qb")
+    return data
 
 filters['convert linebreaks']=convert_linebreaks
 filters['__default__']=convert_linebreaks
@@ -89,7 +101,7 @@ class LinkCategory(models.Model):
 
 class Link(models.Model):
     """Blogroll Struct"""
-    url = models.URLField(blank=True, verify_exists=True)
+    url = models.URLField(blank=True)
     link_name = models.CharField(blank=True, max_length=255)
     link_image = models.ImageField(upload_to="blog_uploads/links/", height_field='link_image_height', width_field='link_image_width',blank=True)
     link_image_height = models.IntegerField(blank=True, null=True)
@@ -98,7 +110,7 @@ class Link(models.Model):
     description = models.TextField(blank=True)
     visible = models.BooleanField(default=True)
     blog = models.ForeignKey('Blog')
-    rss = models.URLField(blank=True, verify_exists=True)
+    rss = models.URLField(blank=True)
     
     category = models.ForeignKey('LinkCategory')
     
@@ -117,8 +129,8 @@ class Pingback(models.Model):
     body = models.TextField(blank=True)
     is_public = models.BooleanField(default=False)
     
-    source_url = models.URLField(blank=True, verify_exists=True)
-    target_url = models.URLField(blank=True, verify_exists=False)
+    source_url = models.URLField(blank=True)
+    target_url = models.URLField(blank=True)
     pub_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
     mod_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
     
@@ -154,8 +166,8 @@ class Tag(models.Model):
 class Author(models.Model):
     """User guy"""
     fullname = models.CharField(blank=True, max_length=100)
-    url = models.URLField(blank=True, verify_exists=True)
-    avatar = models.ImageField(blank=True, upload_to="users/avatars/", height_field='avatar_height', width_field='avatar_width')
+    url = models.URLField(blank=True)
+    avatar = models.ImageField(blank=True, upload_to="avatars", height_field='avatar_height', width_field='avatar_width')
     user = models.ForeignKey(User, unique=True)
     about = models.TextField(blank=True)
     avatar_height = models.IntegerField(blank=True, null=True)
@@ -166,6 +178,9 @@ class Author(models.Model):
     #    # search_fields = ('',)
     #    pass
 
+    def get_avatar_url(self):
+        print self, "Getting avatar url"
+        return self.avatar.url
     def __str__(self):
         return "%s (%s)" % (self.fullname,self.user.username)
 
@@ -258,27 +273,16 @@ class Post(models.Model):
 
             
     def save(self):
-        # convert this crapola to unicode
-        # self.body = self.body.decode('utf-8')
-        # print self.body
-        #if not self.id:
-        #    # replace self.name with your prepopulate_from field
-        #    self.body = xmlify(self.body)
-        #    self.title = xmlify(self.title)
-            
+        logger.debug("Post.save entered")
         if not self.slug or self.slug=='':
             self.slug = SlugifyUniquely(self.title, self.__class__)
             
-        # regen summary...
-        
-        self.summary=truncate_html_words(filters.get(self.text_filter, convert_linebreaks)(self.body), 50)
-        
-        # save to create my ID for the manytomany thing
+        trunc = Truncator(filters.get(self.text_filter, convert_linebreaks)(self.body)).chars(50, html=True)
+        logger.debug("Post.save ---")
+        logger.debug(trunc)
+        self.summary = trunc
         super(self.__class__, self).save()
-        # self.handle_technorati_tags()
-        # save again :-/
-        # super(self.__class__, self).save()
-        # check the outgoing pings...
+        logger.debug("Post.save complete")
         
     def get_archive_url(self):
         # returns the path in archive
@@ -286,13 +290,31 @@ class Post(models.Model):
         return archive_url
         
     def get_year_archive_url(self):
-        return self.pub_date.strftime( settings.SITE_URL + "blog/%Y/").lower()
+        # return self.pub_date.strftime( settings.SITE_URL + "blog/%Y/").lower()
+        kwargs = {
+            "year": self.pub_date.year,
+        }
+        return reverse("year-archive", kwargs=kwargs)
         
     def get_month_archive_url(self):
-        return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b").lower()
+        # return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b").lower()
+        kwargs = {
+            "year": self.pub_date.year,
+            'month': self.pub_date.strftime("%b").lower(),
+        }
+        return reverse("month-archive", kwargs=kwargs)
+        
         
     def get_day_archive_url(self):
-        return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b/%d").lower()
+        # return self.pub_date.strftime(settings.SITE_URL +"blog/%Y/%b/%d").lower()
+        kwargs = {
+            "year": self.pub_date.year,
+            'month': self.pub_date.strftime("%b").lower(),
+            'day': self.pub_date.day,
+
+        }
+        return reverse("day-archive", kwargs=kwargs)
+
 
     def get_post_archive_url(self):
         return self.get_absolute_url()  
@@ -301,7 +323,8 @@ class Post(models.Model):
         # returns url for trackback pings.
         # return self.get_absolute_url() + "trackback/"
         # return "".join([settings.SITE_URL,, str(self.id)]) + "/"
-        return settings.SITE_URL + self.get_absolute_url()[1:] + "trackback/"
+        # return settings.SITE_URL + self.get_absolute_url()[1:] + "trackback/"
+        return self.get_absolute_url + "trackback/"
     
     def get_absolute_uri(self):
         # returns a url for the interweb
@@ -309,15 +332,23 @@ class Post(models.Model):
         datestr = self.pub_date.strftime("%Y/%b/%d")
         
         # print self.slug
-        return settings.SITE_URL + "blog/%s/%s/" % (datestr.lower(), self.slug) 
+        # return settings.SITE_URL + "blog/%s/%s/" % (datestr.lower(), self.slug) 
+        return self.get_absolute_url()
 
 
     def get_absolute_url(self):
-        blogid = self.blog.id
-        datestr = self.pub_date.strftime("%Y/%b/%d")
-        
-        # print self.slug
-        return settings.SITE_URL +"blog/%s/%s/" % (datestr.lower(), self.slug) 
+        # blogid = self.blog.id
+        # datestr = self.pub_date.strftime("%Y/%b/%d")
+        # 
+        # # print self.slug
+        # return settings.SITE_URL +"blog/%s/%s/" % (datestr.lower(), self.slug) 
+        kwargs = {
+            'slug': self.slug,
+            'year': self.pub_date.year,
+            'month': self.pub_date.strftime("%b").lower(),
+            'day': self.pub_date.day,
+        }
+        return reverse("post-detail", kwargs=kwargs)
 
     def get_site_url(self):
         """
@@ -338,7 +369,7 @@ class Post(models.Model):
     get_full_body.allow_tags = True
     
     def get_formatted_body(self, split=True):
-        """ returns the markdown-formatted version of the body text"""
+        """ returns the formatted version of the body text"""
         # check for 'more' tag
         if split and self.body.find('<!--more-->') > -1:
             # this is split.
@@ -347,7 +378,7 @@ class Post(models.Model):
         else:
             b = self.body
             splitted = False
-            
+        
         textproc = filters.get(self.text_filter, convert_linebreaks)
         b = textproc(b)
         if splitted:
@@ -386,7 +417,9 @@ class Blog(models.Model):
         return self.title
 
     def get_url(self):
-        return "".join([settings.SITE_URL,"blog","/", str(self.id)]) + "/"
+        # return "".join([settings.SITE_URL,"blog","/", str(self.id)]) + "/"
+        # return reverse("archive-index")
+        return "http://127.0.0.1:8000/blog/"
         
         
         

@@ -13,23 +13,28 @@ import datetime
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 import xmlrpclib
 import urllib, re
-from external.BeautifulSoup import BeautifulSoup as bs
+# from external.BeautifulSoup import BeautifulSoup as bs
+from BeautifulSoup import BeautifulSoup as bs
+import exceptions
+import logging
+logger = logging.getLogger(__name__)
 
 def process_trackback(request, slug):
+    logger.debug("process_trackback called")
     if request.method == 'POST':
-        print "Got a trackback, methinks...", slug
+        logger.info( "Got a trackback, methinks... %s" % slug)
         source_uri = request.POST['url']
         try:
             post = Post.objects.get(slug__exact=slug)
-            print "post: ", post.title
+            logger.debug( "post: %s" % post.title)
             target_uri = post.get_absolute_uri()
         except Exception, e:
             import sys, traceback
             traceback.print_exc(sys.stderr)
             return False
-        print "From:", source_uri
-        print "To:", target_uri
-        print "Post:", post.title
+        logger.debug("From: %s" % source_uri)
+        logger.debug("To: %s" % target_uri)
+        logger.debug("Post:" % post.title)
         res, message = trackback_ping(source_uri, target_uri, check_spam=True)
         if res:
             return HttpResponse("""
@@ -57,49 +62,51 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
     for outgoing pings, set keyword arguments post (post object) and
     outgoing=True
     """
-    print "pingback_ping called..."
-    print "Ping from: ",source_uri
-    print "Ping to: ", target_uri
+    logger.info("pingback_ping called...")
+    logger.info( "Ping from: %s" % source_uri)
+    logger.info( "Ping to: %s" % target_uri)
     # check for dupes...
     
     try:
         pb = Pingback.objects.filter(source_url=source_uri).filter(target_url=target_uri)
         for x in pb:
-            print "-",x
+            logger.debug( "-" + str(x))
         if pb.count() > 0:
             # it's a dupe, just ignore it.
-            print "Got this pingback already, homey."
+            logger.warn( "Got this pingback already, homey.")
             return False
     except Exception,e:
         import traceback, sys
+        logger.warn(e)
         print traceback.print_exc(sys.stderr)
         return False, sys.exc_info()[0]
             
-    # print "%s -> %s" (source_uri, target_uri)
+    logger.info("ping: %s -> %s" % (source_uri, target_uri))
     if outgoing:
-        
         p = post
         if source_uri[0]=="/":
           # this is a site-absolute url, let's make it a real one...
           source_uri = settings.SITE_URL + source_uri[1:]
           
-        print "Sending ping..."
+        logger.info("Sending ping...")
         pingback_address = get_pingback_url(target_uri)
         
         if pingback_address:
             try:
                 # we got *something*
-                print "Sending ping request %s -> %s" % (source_uri, pingback_address)
+                logger.info("Sending ping request %s -> %s" % (source_uri, pingback_address))
                 s = xmlrpclib.ServerProxy(pingback_address)
+                print 100*"-"
+                logger.warn("s: %s" % str(s))
                 res = s.pingback.ping(source_uri, target_uri)
-                print "Got back", res
+                logger.info( "Got back '%s'" % res)
                 struct = {}
                 struct['author_name'] = post.author.get_profile().fullname
                 struct['source_url']  = source_uri
                 struct['target_url']  = target_uri
                 struct['title'] = post.title
-                print struct
-            except Exception,e:
+                logger.debug(str(struct))
+            except Exception, e:
                 import traceback, sys
                 traceback.print_exc(sys.stderr)
                 return False, sys.exc_info()[0]
@@ -107,7 +114,7 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
     else:
         # this is an incoming ping-a-ling
         slug = slug_from_uri(target_uri)
-        print "got %s" % slug
+        logger.info( "got %s" % slug)
         
         try:
             if not post:
@@ -115,20 +122,20 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
             else:
                 p = post    
         except:
-            print "No post for", slug
+            logger.warn( "No post for %s" % slug)
             return False
-        print "Got trackback request for '%s'" % p.title
+        logger.debug("Got trackback request for '%s'" % p.title)
         # title = p.has_key('title') and request.POST['title'] or ''
         title = p.title
         # excerpt = p.has_key('excerpt') and request.POST['excerpt'] or ''
         is_spam, struct = confirm_pingback(source_uri, target_uri, check_spam = check_spam)
-        print "is_spam", is_spam
-        print "struct", struct
+        logger.info("is_spam: %s" % is_spam)
+        logger.debug( "struct: %s" % str(struct))
         if check_spam and is_spam:
-            # print "SPAM!!!11!"
+            logger.info("spam")
             return "Sorry, buddy, go peddle your v1agra somewhere else"
     # ok, let's get this started
-    print "Creating Pingback..."
+    logger.info("Creating Pingback...")
     try:
         pb              = Pingback(
             author_name = struct['author_name'],
@@ -140,16 +147,18 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
             post = p,
         )
         
-        print "Saving pingback..."
+        logger.debug("Saving pingback...")
 
         # print p.post_id
         # pb.post = p
-        print "Added post, saving PB again...(!)"
+        logger.debug("Added post, saving PB again...(!)")
         pb.save()
         res = "Pingback to '%s' successfully registered." % title
+        logger.debug("pingback_ping completed: res=%s" % str(res))
         return res
 
     except Exception, e:
+        logger.warn("pingback_ping exception: " + str(e))
         print e
         return False
 
@@ -158,71 +167,72 @@ def slug_from_uri(uri):
     # take the re from the uri.
     # pat = "http://ericbook.local:8000/blog/2007/mar/05/a-shadow-world-within-a-world/"
     pat = r"%sblog/(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/$" % settings.SITE_URL
-    #print pat
     c = re.compile(pat)
     m = c.match(uri)
     if m:
         slug = m.groupdict()['slug']
     else:
         slug = ""
-    # print "got slug...", slug
+    logger.debug( "got slug... %s" % slug)
     return slug
     
 def get_pingback_url(target_url):
     """
     Grabs an page, and reads the pingback url for it.
     """
-    print "get_pingback_url called..."
-    print "grabbing", target_url
+    logger.debug("get_pingback_url called...")
+    logger.debug("grabbing " + str(target_url))
     html = urllib.urlopen(target_url).read()
-    print "Got %d bytes" % len(html)
+    logger.info( "Got %d bytes" % len(html))
     soup = bs(html)
     # check for link tags...
     pbaddress = None
     for l in soup.findAll('link'):
         if l.get('rel','') == 'pingback':
             pbaddress = str(l.get('href'))
-            print "Got", pbaddress
-            
+            logger.debug("Got: %s" % pbaddress)
+    
+    logger.debug("get_pingback_url completed")        
     return pbaddress
     
 def confirm_pingback(target_url, search_url, check_spam=True):
     # target url must contain search_url
     # returns bool is_spam, struct  
-    print "Loading external page", target_url
+    logger.debug("Loading external page: %s" % target_url)
     text = urllib.urlopen(target_url).read()
     # print "Got:"
     # print text
     soup = bs(text)
-    print "Checking for URL", search_url
+    logger.info("Checking for URL: %s" % str(search_url))
     for a in soup.findAll('a'):
         if not check_spam or a.get('href') == search_url:
-            print "Got", a.get('href')
+            logger.info( "Got %s" % a.get('href'))
             struct = {}
             # read the author's name, if possible...
             struct['author_name'] = ''
             struct['source_url']  = target_url
             struct['target_url']  = search_url
             struct['title'] = str(soup.html.head.title.string)
-            print "returning pingback"
+            logger.info( "returning pingback")
             return False, struct
     # didn't find it...sod off, spamboy!
     return True, None
 
 def send_pings(post):
+    logger.debug("send_pings entered")
     if post.status=='publish':
         # check for outgoing links.
         target_urls = []
-        # print post.body
+        logger.debug("post.body")
         soup = bs(post.get_formatted_body())
-        
+        logger.debug(str(soup))
         for a in soup.findAll('a'):
             target_url = a.get('href',None)
             if target_url:
-                print "Got URL:", a.get('href')
+                logger.info( "Got URL:" + a.get('href'))
                 target_urls.append(target_url)
         
-        print "Checking out %d url(s)" % len(target_urls)
+        logger.info("Checking out %d url(s)" % len(target_urls))
         for url in target_urls:
             pb_urls, tb_urls = get_ping_urls(url)
             for pb in pb_urls:
@@ -236,17 +246,17 @@ def trackback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=
     trackback URL of a blog post
     """
 
-    print "trackback_ping called..."
+    logger.debug("trackback_ping called...")
     if source_uri[0]=="/":
        # this is a site-absolute url, let's make it a real one...
        source_uri = settings.SITE_URL + source_uri[1:]
                 
-    print "Ping from: ",source_uri
-    print "Ping to: ", target_uri
+    logger.info( "Ping from: %s" % source_uri)
+    logger.info( "Ping to: %s" % target_uri)
     # check for dupes...
 
     try:
-        print "Checking for dupes..."
+        logger.info( "Checking for dupes...")
         pb = Pingback.objects.filter(source_url=source_uri).filter(target_url=target_uri)
         for x in pb:
             print "-",x
@@ -351,10 +361,15 @@ def get_ping_urls(url):
     """
     returns a two-tuple of lists, ([pingback urls],[trackback urls])
     """
+    logger.debug("get_ping_urls called: %s" % url)
     ping_urls = []
     tb_urls = []
     
-    txt = urllib.urlopen(url).read()
+    try:
+        txt = urllib.urlopen(url).read()
+    except exceptions.IOError, e:
+        logger.warn("Failed to open %s: IOError" % str(url))
+        return [], []
     print "Got %d bytes" % len(txt)
     soup = bs(txt)
     # walk through the links, looking for ping-entries
