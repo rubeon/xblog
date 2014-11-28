@@ -1,5 +1,6 @@
 # Create your views here.
 from django.http import HttpResponseRedirect, HttpResponse, Http404
+from django.views.decorators.csrf import csrf_exempt
 # from models import Category, Entry
 import SimpleXMLRPCServer
 import sys
@@ -88,7 +89,7 @@ class SafeXMLRPCView(SimpleXMLRPCServer.SimpleXMLRPCDispatcher):
         else:
             raise Exception('method %s is not supported' % method)
 
-
+@csrf_exempt
 def call_xmlrpc(request, module):
     """ handles XML RPC Calls """
     # python 2.5 apparently changed the init for SimpleXMLDispatcher...
@@ -109,7 +110,7 @@ def call_xmlrpc(request, module):
             raise Exception('Non POST methods not allowed')
         print request.META        
         # get arguments
-        data = request.raw_post_data
+        data = request.body
         print "XMLRPC Data:"
         print data
         response = dispatcher._marshaled_dispatch(
@@ -124,7 +125,8 @@ def call_xmlrpc(request, module):
             sys.exc_type, sys.exc_value
             ))
     
-    # print response
+    print response
+    print dir(response)
     return HttpResponse(response, mimetype="text/xml")
 
 view = call_xmlrpc

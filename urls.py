@@ -30,18 +30,14 @@ date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<
 
 PAGE_LENGTH=10
 
-published_posts = {
-    'date_field': 'pub_date',
-    'paginate_by': PAGE_LENGTH,
-    'queryset' : Post.objects.filter(status='publish'),  
-} 
 
 urlpatterns = patterns('',
+    url(r'^xmlrpc/*','xblog.views.xmlrpc_views.call_xmlrpc', {'module':'xblog.metaWeblog'}),
     url(year_archive_pattern, YearArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="year-archive"),
     url(month_archive_pattern, MonthArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="month-archive"),
     url(day_archive_pattern, DayArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="day-archive"),
     url(date_detail_pattern, DateDetailView.as_view(model=Post, date_field="pub_date",), name='post-detail'),
-    url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH, queryset=Post.objects.filter(status='publish')), name='archive-index', ),
+    url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH, queryset=Post.objects.filter(status='publish')), name='archive-index',  ),
 )
 
 

@@ -1,12 +1,14 @@
+{% load static %}
 <article>
 
             <div class="blog-post">
                 <h2 class="blog-post-title">
                     <a href="{{ object.get_absolute_url }}">{{ object.title }}</a>
                 </h2>
-        <div class="panel">
-            <p class="blog-post-meta">Posted by {{ object.author }} at {{ object.pub_date|date:"P"}} on {{ object.pub_date|date:"N dS, Y"}}</p>
-            {{ object.get_full_body|safe }}
-        </div>
-        <div class="">
+				<div class="panel">
+		            <p class="blog-post-meta">That thar's the object.author:  {{ object.author.get_avatar_url }}</p>
+		            <p class="blog-post-meta">Posted by {{ object.author }} at {{ object.pub_date|date:"P"}} on {{ object.pub_date|date:"N dS, Y"}}</p>
+	            	{{ object.get_full_body|safe }}
+				</div>
+			</div>
 </article>

@@ -14,15 +14,21 @@ import time
 import os
 import string
 from django.core.urlresolvers import reverse
-
+# from cumulus.storage import SwiftclientStorage
+# openstack_storage = SwiftclientStorage()
 
 from mimetypes import guess_type
 # from external.markdown import Markdown
 # from external.smartypants import smartyPants
-# from external.postutils import SlugifyUniquely
+from external.postutils import SlugifyUniquely
 # # from external.BeautifulSoup import BeautifulSoup
 import BeautifulSoup
 import markdown2
+
+import logging
+logger = logging.getLogger(__name__)
+
+
 
 STATUS_CHOICES=(('draft','Draft'),('publish','Published'),('private','Private'))
 # text filters
@@ -161,7 +167,7 @@ class Author(models.Model):
     """User guy"""
     fullname = models.CharField(blank=True, max_length=100)
     url = models.URLField(blank=True)
-    avatar = models.ImageField(blank=True, upload_to="users/avatars/", height_field='avatar_height', width_field='avatar_width')
+    avatar = models.ImageField(blank=True, upload_to="avatars", height_field='avatar_height', width_field='avatar_width')
     user = models.ForeignKey(User, unique=True)
     about = models.TextField(blank=True)
     avatar_height = models.IntegerField(blank=True, null=True)
@@ -172,6 +178,9 @@ class Author(models.Model):
     #    # search_fields = ('',)
     #    pass
 
+    def get_avatar_url(self):
+        print self, "Getting avatar url"
+        return self.avatar.url
     def __str__(self):
         return "%s (%s)" % (self.fullname,self.user.username)
 
@@ -264,14 +273,16 @@ class Post(models.Model):
 
             
     def save(self):
+        logger.debug("Post.save entered")
         if not self.slug or self.slug=='':
             self.slug = SlugifyUniquely(self.title, self.__class__)
             
         trunc = Truncator(filters.get(self.text_filter, convert_linebreaks)(self.body)).chars(50, html=True)
-        print "---"
-        print trunc
+        logger.debug("Post.save ---")
+        logger.debug(trunc)
         self.summary = trunc
         super(self.__class__, self).save()
+        logger.debug("Post.save complete")
         
     def get_archive_url(self):
         # returns the path in archive
@@ -312,7 +323,8 @@ class Post(models.Model):
         # returns url for trackback pings.
         # return self.get_absolute_url() + "trackback/"
         # return "".join([settings.SITE_URL,, str(self.id)]) + "/"
-        return settings.SITE_URL + self.get_absolute_url()[1:] + "trackback/"
+        # return settings.SITE_URL + self.get_absolute_url()[1:] + "trackback/"
+        return self.get_absolute_url + "trackback/"
     
     def get_absolute_uri(self):
         # returns a url for the interweb
@@ -320,7 +332,8 @@ class Post(models.Model):
         datestr = self.pub_date.strftime("%Y/%b/%d")
         
         # print self.slug
-        return settings.SITE_URL + "blog/%s/%s/" % (datestr.lower(), self.slug) 
+        # return settings.SITE_URL + "blog/%s/%s/" % (datestr.lower(), self.slug) 
+        return self.get_absolute_url()
 
 
     def get_absolute_url(self):
@@ -404,7 +417,9 @@ class Blog(models.Model):
         return self.title
 
     def get_url(self):
-        return "".join([settings.SITE_URL,"blog","/", str(self.id)]) + "/"
+        # return "".join([settings.SITE_URL,"blog","/", str(self.id)]) + "/"
+        # return reverse("archive-index")
+        return "http://127.0.0.1:8000/blog/"
         
         
         

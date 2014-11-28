@@ -3,8 +3,7 @@
 {% block maincontent %}
 
 	{% for object in object_list %}
-	{% ifchanged %}<h2><a href="{{ object.get_month_archive_url }}">{{ object.pub_date|date:"F Y"}}</a></h2>{% endifchanged %}
-    
+	{% ifchanged %}<h2><a href="{{ object.get_month_archive_url }}">{{ object.pub_date|date:"F Y"}}</a></h2>{% endifchanged %}    
     {% include "includes/post_template.html" %}
     
 	{% comment %}

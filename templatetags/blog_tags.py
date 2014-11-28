@@ -7,7 +7,7 @@ Created by Eric Williams on 2007-03-10.
 """
 
 from xblog.models import LinkCategory, Link, Post
-from django.template import Library,Node
+from django.template import Library, Node
 register = Library()
 
 def get_blogroll(parser, token):
@@ -27,7 +27,6 @@ class MonthMenuObject(Node):
 
 class BlogRoll(Node):
     """A Blogroll object...."""
-    
     def render(self, context):
         context['blogroll_categories'] = LinkCategory.objects.all()
         return ''
