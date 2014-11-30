@@ -38,6 +38,7 @@ urlpatterns = patterns('',
     url(day_archive_pattern, DayArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="day-archive"),
     url(date_detail_pattern, DateDetailView.as_view(model=Post, date_field="pub_date",), name='post-detail'),
     url(post_edit_pattern, 'xblog.views.edit.edit_post',name="post-edit" ),
+    url(r'add_post/$', 'xblog.views.edit.add_post', name='post-add'),
     url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH, queryset=Post.objects.filter(status='publish')), name='archive-index',  ),
 )
 

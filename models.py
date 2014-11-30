@@ -69,7 +69,7 @@ def convert_linebreaks(data):
     return data
 
 filters['convert linebreaks']=convert_linebreaks
-filters['__default__']=convert_linebreaks
+filters['__default__']=get_markdown
 
 def xmlify(data):
     return data
@@ -430,7 +430,9 @@ class PostForm(ModelForm):
     Django form-based class for editing posts.
     """
     class Meta:
-        model = Post        
+        model = Post
+        # fields = ["pub_date", "title",  "enable_comments", "body", "text_filter", "blog", "author"]
+        exclude = ['update_date', 'create_date', 'slug', ]
         
         
 #class PodcastChannel(models.Model):
