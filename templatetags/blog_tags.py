@@ -5,10 +5,13 @@ templatetags.py
 
 Created by Eric Williams on 2007-03-10.
 """
-
+import logging
+logger = logging.getLogger(__name__)
 from xblog.models import LinkCategory, Link, Post
 from django.template import Library, Node
 register = Library()
+
+
 
 def get_blogroll(parser, token):
     """
@@ -32,6 +35,7 @@ class BlogRoll(Node):
         return ''
         
         
-print "Registering 'get_blogroll'"    
+logging.info( "Registering 'get_blogroll'")
 register.tag('get_blogroll', get_blogroll)
+logging.info( "Registering 'get_blog_months'")
 register.tag('get_blog_months', get_blog_months)

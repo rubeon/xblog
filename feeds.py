@@ -12,6 +12,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from xblog.models import Post, Blog
 from django.conf import settings
 import datetime
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 try:
     from urllib import quote as urlquote
@@ -118,22 +122,20 @@ class Posts(Feed):
     """
     Takes an item, as returned by items(), and returns the item's
     pubdate.
-    """    
+    """
+    logger.debug("entered item_pubdate") 
     return item.pub_date
 
 
   def author_name(self, obj):
-    try:
-       return obj.author.first_name
-    except Exception, e:
-       print "Doh"
-       import sys, traceback
-       print "Exception in user code:"
-       print '-'*60
-       print type(obj)
-       traceback.print_exc(file=sys.stdout)
-       print '-'*60
-       return "Rube"
+      try:
+          return obj.author.first_name
+      except Exception, e:
+          logger.debug("Doh! %s" % e)
+          import sys, traceback
+          logger.warn("Exception in user code:")
+          logger.warn(str(type(obj)))
+          return "Unknown"
     
     
 if __name__ == '__main__':

@@ -6,11 +6,13 @@ import SimpleXMLRPCServer
 import sys
 import traceback
 # dispatcher = SimpleXMLRPCServer.SimpleXMLRPCDispatcher()
+import logging
+logger = logging.getLogger(__name__)
+
 
 def public(f):
     """ decides if a function is public or not"""
     f.public = True
-    # print "DECORATOR:",f
     return f
 
 def is_public(func):
@@ -108,25 +110,21 @@ def call_xmlrpc(request, module):
     try:
         if request.META['REQUEST_METHOD']!='POST':
             raise Exception('Non POST methods not allowed')
-        print request.META        
+        logger.debug(request.META)
         # get arguments
         data = request.body
-        print "XMLRPC Data:"
-        print data
+        logger.debug("XMLRPC Data:")
+        logger.debug(data)
         response = dispatcher._marshaled_dispatch(
             data, getattr(mod, '_dispatch', None)
         )
-        print 20*"-",response
-    except:
-        print "Baaaa-DOING!"
-        traceback.print_exc()
-        # internal error, report as http server error
+    except Exception, e:
+        logger.warn("Baaaa-DOING! %s" % str(e))
         response = SimpleXMLRPCServer.xmlrpclib.Fault(1, "%s:%s" % (
             sys.exc_type, sys.exc_value
             ))
     
-    print response
-    print dir(response)
+    logger.debug(response)
     return HttpResponse(response, mimetype="text/xml")
 
 view = call_xmlrpc

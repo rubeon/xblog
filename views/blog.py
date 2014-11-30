@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-views.py
+blog.py
 
 Created by Eric Williams on 2007-02-21.
 """
@@ -10,6 +10,9 @@ from django.template import RequestContext, Context, loader
 # from xcomments.models import FreeComment
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from xblog.models import *
+
+import logging
+logger = logging.getLogger(__name__)
 
 """
 def tag_overview(request, tag):
@@ -31,6 +34,7 @@ def blog_overview(request):
     # shows the latest entries in all blogs...
     # get last posts...
     # r = HttpResponse(mimetype="text/plain")
+    logger.debug("blog_overview entered")
     latest_posts = Post.objects.order_by('-pub_date')[:10]
     # thisblog = Blog.objects.all()[0]
     c = {}
@@ -65,14 +69,14 @@ def site_overview(request):
                     p.mycat = cat
                     frontlist.append(p)
             except Exception, e:
-                print cat, e
+                logger.warn("%s:%s" % (cat, e)) 
     
 
     latest_posts = Post.objects.all().order_by('-pub_date')[:10]
     # latest_comments = FreeComment.objects.all().order_by('-submit_date')[:10]
     
     c['latest_feature'] = featurecat.post_set.order_by('-pub_date')
-    print c['latest_feature']
+    logger.debug("Latest feature: %s" % c['latest_feature'])
     c['latest_posts']= latest_posts
     # c['latest_comments']= latest_comments
     c['frontlist']=frontlist

@@ -11,7 +11,10 @@ from django.template import RequestContext, Context, loader
 # from xcomments.models import FreeComment
 from django import forms 
 from django.http import HttpResponseRedirect, HttpResponse, Http404
-from xblog.models import Post
+from xblog.models import Post, PostForm
+
+import logging
+logger = logging.getLogger(__name__)
 
 #    class PublicFreeCommentForm(newforms.Form):
 #        person_name = newforms.CharField(label="Your Name")
@@ -22,11 +25,14 @@ from xblog.models import Post
 #        target = newforms.CharField(widget=newforms.HiddenInput)
 #        gonzo = newforms.CharField(widget=newforms.HiddenInput)
 #
+
+
+
 @login_required
-def edit_post(request, slug):
-    print "edit_post called..."
-    PostForm = forms.form_for_model(Post)
-    p = Post.objects.get(slug=slug)
+def edit_post(request, **kwargs):
+    logger.debug("edit_post: %s" % locals())
+    # PostForm = forms.form_for_model(Post)
+    p = Post.objects.get(slug=kwargs['slug'])
     if request.POST:
         print "Got post..."
         newdata = request.POST.copy()
@@ -44,7 +50,8 @@ def edit_post(request, slug):
             return HttpResponse(t.render(c))
             
     else:
-        f = forms.form_for_instance(p,form=PostForm)()
+        # f = forms.form_for_instance(p,form=PostForm)()
+        f = PostForm(p)
         c = RequestContext(request)
         c['form']=f
         t = loader.get_template('xblog/edit_post.html')

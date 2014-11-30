@@ -32,8 +32,7 @@ def process_trackback(request, slug):
             logger.debug( "post: %s" % post.title)
             target_uri = post.get_absolute_uri()
         except Exception, e:
-            import sys, traceback
-            traceback.print_exc(sys.stderr)
+            logger.warn(e)
             return False
         logger.debug("From: %s" % source_uri)
         logger.debug("To: %s" % target_uri)
@@ -79,9 +78,8 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
             logger.warn( "Got this pingback already, homey.")
             return False
     except Exception,e:
-        import traceback, sys
+        import sys
         logger.warn(e)
-        print traceback.print_exc(sys.stderr)
         return False, sys.exc_info()[0]
             
     logger.info("ping: %s -> %s" % (source_uri, target_uri))
@@ -99,7 +97,6 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
                 # we got *something*
                 logger.info("Sending ping request %s -> %s" % (source_uri, pingback_address))
                 s = xmlrpclib.ServerProxy(pingback_address)
-                print 100*"-"
                 logger.warn("s: %s" % str(s))
                 res = s.pingback.ping(source_uri, target_uri)
                 logger.info( "Got back '%s'" % res)
@@ -110,8 +107,8 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
                 struct['title'] = post.title
                 logger.debug(str(struct))
             except Exception, e:
-                import traceback, sys
-                traceback.print_exc(sys.stderr)
+                import sys
+                logger.warn(e)
                 return False, sys.exc_info()[0]
     
     else:
@@ -152,8 +149,7 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
         
         logger.debug("Saving pingback...")
 
-        # print p.post_id
-        # pb.post = p
+        logger.debug(p.post_id)
         logger.debug("Added post, saving PB again...(!)")
         pb.save()
         res = "Pingback to '%s' successfully registered." % title
@@ -162,7 +158,7 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
 
     except Exception, e:
         logger.warn("pingback_ping exception: " + str(e))
-        print e
+        # logger.error(e)
         return False
 
         
@@ -203,8 +199,6 @@ def confirm_pingback(target_url, search_url, check_spam=True):
     # returns bool is_spam, struct  
     logger.debug("Loading external page: %s" % target_url)
     text = urllib.urlopen(target_url).read()
-    # print "Got:"
-    # print text
     soup = bs(text)
     logger.info("Checking for URL: %s" % str(search_url))
     for a in soup.findAll('a'):
@@ -239,8 +233,10 @@ def send_pings(post):
         for url in target_urls:
             pb_urls, tb_urls = get_ping_urls(url)
             for pb in pb_urls:
-                pingback_ping(post.get_absolute_url(), url, post=post, outgoing=True)
+                logger.info("Got pingback URL: %s" % pb)
+                pingback_ping(post.get_absolute_url(), pb, post=post, outgoing=True)
             for tb in  tb_urls:
+                logger.info("Got trackback URL: %s" % url)
                 trackback_ping(post.get_absolute_url(), tb, post=post, outgoing=True)
 
 def trackback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=False):
@@ -262,36 +258,36 @@ def trackback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=
         logger.info( "Checking for dupes...")
         pb = Pingback.objects.filter(source_url=source_uri).filter(target_url=target_uri)
         for x in pb:
-            print "-",x
+            logger.debug("- %s" % str(x))
         if pb.count() > 0:
             # it's a dupe, just ignore it.
-            print "Got this pingback already, homey."
+            logger.warn("Got this pingback already, homey.")
             return False, "Got this pingback already, homey."
     except Exception,e:
-        import traceback, sys
-        print traceback.print_exc(sys.stderr)
+        logger.warn(str(e))
 
-    print "Moving along..."
-    print "%s -> %s" % (source_uri, target_uri)
+
+    logger.debug("Moving along...")
+    logger.info("%s -> %s" % (source_uri, target_uri))
     if outgoing:
-        print "outbound ping"
+        logger.info("outbound ping")
         # trackbacks send a POST to the target URL with:
         # title=title
         # url = post.get_absolute_url
         # excerpt = ??
         # blog_name = post.blog.title
         p = post
-        print "Sending trackback..."
+        logger.info("Sending trackback...")
         # pingback_address = get_pingback_url(target_uri)
         if target_uri:
             try:
                 # we got *something*
-                print "Sending trackback request..."
+                logger.info( "Sending trackback request...")
                 # s = xmlrpclib.ServerProxy(pingback_address)
                 # res = s.pingback.ping(source_uri, target_uri)
                 data = dict(title=p.title, url=source_uri, excerpt=p.summary,blog_name=p.blog.title)
                 res = urllib.urlopen(target_uri, urllib.urlencode(data)).read()
-                print "Got back", res
+                logger.info("Got back %s" % str(res))
                 struct = {}
                 try:
                     struct['author_name'] = post.author.get_profile().fullname
@@ -301,16 +297,16 @@ def trackback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=
                 struct['target_url']  = target_uri
                 struct['title'] = post.title
             except Exception,e:
-                import traceback, sys
-                traceback.print_exc(sys.stderr)
+                import sys
+                logger.warn(e)
                 return False, sys.exc_info()[0]
 
     else:
         # this is an incoming ping-a-ling
-        print "Inbound ping..."
-        print "Checking", target_uri
+        logger.info( "Inbound ping...")
+        logger.info( "Checking" % target_uri)
         slug = slug_from_uri(target_uri)
-        print "got %s" % slug
+        logger.info("got %s" % slug)
 
         try:
             if not post:
@@ -318,20 +314,20 @@ def trackback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=
             else:
                 p = post    
         except:
-            print "No post for", slug
+            logger.warn( "No post for " % slug)
             return False, "Post not found"
-        print "Got trackback request for '%s'" % p.title
+        logger.info( "Got trackback request for '%s'" % p.title)
         # title = p.has_key('title') and request.POST['title'] or ''
         title = p.title
         # excerpt = p.has_key('excerpt') and request.POST['excerpt'] or ''
         is_spam, struct = confirm_pingback(source_uri, target_uri, check_spam = check_spam)
-        print "is_spam", is_spam
-        print "struct", struct
+        logger.info("is_spam: %s " % str(is_spam))
+        logger.debug("struct: %s" % str(struct))
         if check_spam and is_spam:
-            # print "SPAM!!!11!"
+            logger.info("SPAM!!!11!")
             return False, "Sorry, buddy, go peddle your v1agra somewhere else"
     # ok, let's get this started
-    print "Creating Pingback..."
+    logger.info("Creating Pingback...")
     try:
         pb              = Pingback(
             author_name = struct['author_name'],
@@ -343,19 +339,19 @@ def trackback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=
             post = p,
         )
 
-        print "Saving pingback..."
+        logger.info("Saving pingback...")
 
-        # print p.post_id
+        logger.debug(p.post_id)
         # pb.post = p
-        print "Added post, saving PB again...(!)"
+        logger.debug("Added post, saving PB again...(!)")
         pb.save()
-        print "saved PBw"
+        logger.debug("saved PBw")
         res = "Pingback to '%s' successfully registered." % pb.title
-        print res
+        logger.debug(res)
         return True, res
 
     except Exception, e:
-        print e
+        logger.warn(str(e))
         return False, "Unknown Error"
 
     
@@ -369,19 +365,20 @@ def get_ping_urls(url):
     tb_urls = []
     
     try:
+        logger.info("Trying to contact: %s" % url)
         txt = urllib.urlopen(url).read()
     except exceptions.IOError, e:
         logger.warn("Failed to open %s: IOError" % str(url))
         return [], []
-    print "Got %d bytes" % len(txt)
+    logger.debug("Got %d bytes" % len(txt))
     soup = bs(txt)
     # walk through the links, looking for ping-entries
     
     for a in soup.findAll('link'):
-        print a
+        logger.debug(a)
         rel = a.get('rel')
         if rel == 'pingback':
-            print "Got pingback URL:", a.href
+            logger.info("Got pingback URL: %s" % a.href)
             ping_urls.append(a.get('href'))
     
     # now do t he trackbacks...
@@ -390,13 +387,11 @@ def get_ping_urls(url):
     for x in tb_re.findall(txt.replace('\n',' ')):
         try:
             parseString(x, rdfdata)
-            # print rdf.ids
-            print "URL:", rdfdata.attrs.get('dc:identifier')
-            print "Trackback URL:", rdfdata.attrs.get('trackback:ping')
+            logger.debug( "URL: %s" % rdfdata.attrs.get('dc:identifier'))
+            logger.debug("Trackback URL: %s" % rdfdata.attrs.get('trackback:ping'))
             tb_urls.append(rdfdata.attrs.get('trackback:ping'))
         except Exception,e:
-            import traceback, sys
-            traceback.print_exc(sys.stdout)
+            logger.warn(e)
     
     return ping_urls, tb_urls
 
@@ -410,13 +405,12 @@ class RDF(ContentHandler):
     attrs = {}
     ids = {}
     def startElement(self, name, attrs):
-        # print name, attrs
         if name == 'rdf:Description':
             attrs=dict(attrs)
             self.attrs = attrs
-            # print "ATTRS:", attrs
+            logger.debug("ATTRS: %s" % str(attrs))
             if attrs.has_key('dc:identifier'):
-                # print "ID:", attrs['dc:identifier']
+                logger.debug("ID: %s" % attrs['dc:identifier'])
                 if attrs.has_key('trackback:ping'):
                     self.ids[attrs['dc:identifier']] = attrs['trackback:ping']
                 elif attrs.has_key('about'):

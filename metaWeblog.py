@@ -44,14 +44,14 @@ def authenticated(pos=1):
                 # print "Password: ", password
                 user = User.objects.get(username__exact=username)
             except User.DoesNotExist:
-                print "username %s, password %s, args %s" % (username, password, args)
-                print "User.DoesNotExist"
+                logger.debug("username %s, password %s, args %s" % (username, "password", args))
+                logger.warn( "User.DoesNotExist")
                 raise ValueError("Authentication Failure")
             if not user.check_password(password):
-                print "User.check_password"
+                logger.warn( "User.check_password")
                 raise ValueError("Authentication Failure")
             if not user.is_superuser:
-                print "user.is_superuser"
+                logger.warn("user.is_superuser")
                 raise ValueError("Authorization Failure")
             return func(user, *args, **kwargs)
 
@@ -67,7 +67,7 @@ def metaWeblog_getCategories(user, blogid, struct={}):
     """ 
     takes the blogid, and returns a list of categories
     """
-    print "metaWeblog_getCategories called"
+    logger.debug("metaWeblog_getCategories called")
     categories = Category.objects.all()
     res=[]
     for c in categories:
@@ -84,7 +84,7 @@ def metaWeblog_getCategories(user, blogid, struct={}):
 @authenticated()
 def metaWeblog_newMediaObject(user, blogid, struct):
     """ returns struct with url..."""
-    print "metaWeblog_newMediaObject called"
+    logger.debug( "metaWeblog_newMediaObject called")
     # upload_dir = os.path.join(settings.MEDIA_ROOT,'blog_uploads',user.username)
     # upload_url = "%s/%s/%s" % (settings.MEDIA_URL, 'blog_uploads', urllib.quote(user.username))
     # 
@@ -109,7 +109,7 @@ def metaWeblog_newMediaObject(user, blogid, struct):
     #    # some schmoe program wrote a slash at the beginning...
     #    savename = "." + savename # take that...
 
-    print "savename", savename
+    logger.debug( "savename", savename)
     # renametmpl = "%2d-%s"
     # i = 1
     # while os.path.exists(os.path.join(upload_dir,savename)):
@@ -117,17 +117,17 @@ def metaWeblog_newMediaObject(user, blogid, struct):
     #     i = i + 1
 
     save_path = os.path.join(upload_dir, savename)
-    print "Saving to ", save_path
+    logger.debug("Saving to %s" % save_path)
     # f = open(os.path.join(upload_dir,savename),'w')
     
     path = default_storage.save(save_path, ContentFile(bits))
-    print "Path:", path
+    logger.debug("Path: %s" % path)
     
     # f.write("%s" % bits)
     # f.close()
     res = {}
     res['url']= default_storage.url(path)
-    print res
+    logger.debug(res)
     return res
 
 
@@ -136,7 +136,7 @@ def metaWeblog_newMediaObject(user, blogid, struct):
 @authenticated()
 def metaWeblog_newPost(user, blogid, struct, publish):
     """ mt's newpost function..."""
-    print "metaWeblog.newPost called"
+    logger.debug( "metaWeblog.newPost called")
     body = struct['description']
     author = user # Author.objects.get(user=user)
     blog = Blog.objects.get(pk=blogid)
@@ -154,11 +154,11 @@ def metaWeblog_newPost(user, blogid, struct, publish):
     )
     # print "Prepopulate"
     post.prepopulate()
-    # print "Saving"
+    logger.debug( "Saving")
     post.save()
     logger.info("Setting Tags")
     setTags(post, struct)
-    # print "Handling Pings"
+    logger.debug("Handling Pings")
     logger.info("sending pings to host")
     send_pings(post)
     logger.debug("newPost finished")
@@ -167,7 +167,7 @@ def metaWeblog_newPost(user, blogid, struct, publish):
 @public
 @authenticated()
 def metaWeblog_editPost(user, postid, struct, publish):
-    print "metaWeblog_editPost"
+    logger.debug( "metaWeblog_editPost")
     post = Post.objects.get(id=postid)
     title = struct.get('title', None)
     if title is not None:
@@ -231,7 +231,7 @@ def metaWeblog_editPost(user, postid, struct, publish):
 @authenticated()
 def metaWeblog_getPost(user, postid):
     """ returns an existing post """
-    print "metaWeblog.getPost called "
+    logger.debug( "metaWeblog.getPost called ")
     post = Post.objects.get(pk=postid)
     # post.create_date = format_date(datetime.datetime.now())
     return post_struct(post)
@@ -240,7 +240,7 @@ def metaWeblog_getPost(user, postid):
 @authenticated(pos=2)
 def blogger_getRecentPosts(user, appkey, blogid, num_posts):
     """ returns a list of recent posts """
-    print "blogger.getRecentPosts called..."
+    logger.debug( "blogger.getRecentPosts called...")
     blog = Blog.objects.get(id=blogid)
     posts = blog.post_set.order_by('-pub_date')[:num_posts]
     return [post_struct(post) for post in posts]
@@ -249,8 +249,8 @@ def blogger_getRecentPosts(user, appkey, blogid, num_posts):
 @authenticated()
 def metaWeblog_getRecentPosts(user, blogid, num_posts):
     """ returns a list of recent posts..."""
-    print "metaWeblog.getRecentPosts called..."
-    print "user %s, blogid %s, num_posts %s" % (user, blogid, num_posts)
+    logger.debug( "metaWeblog.getRecentPosts called...")
+    logger.debug( "user %s, blogid %s, num_posts %s" % (user, blogid, num_posts))
     blog = Blog.objects.get(id=blogid)
     posts = blog.post_set.order_by('-pub_date')[:num_posts]
     return [post_struct(post) for post in posts]
@@ -260,7 +260,7 @@ def metaWeblog_getRecentPosts(user, blogid, num_posts):
 @authenticated()
 def blogger_getUserInfo(user, appkey):
     """ returns userinfo for particular user..."""
-    print "blogger.getUserInfo called"
+    logger.debug( "blogger.getUserInfo called")
     # author = user # Author.objects.get(user=user)
     firstname = user.first_name
     lastname = user.last_name
@@ -277,10 +277,10 @@ def blogger_getUserInfo(user, appkey):
 @public
 @authenticated()
 def blogger_getUsersBlogs(user, appkey):
-    print "blogger.getUsersBlogs called"
+    logger.debug( "blogger.getUsersBlogs called")
     # print "Got user", user
     usersblogs = Blog.objects.filter(owner=user)
-    print usersblogs, "blogs for ", user
+    logger.debug( "%s blogs for %s" % (usersblogs, user))
     # return usersblogs
     res = [
     {
@@ -289,7 +289,7 @@ def blogger_getUsersBlogs(user, appkey):
     'url': blog.get_url()
     } for blog in usersblogs
     ]
-    print res
+    logger.debug(res)
     return res
 
 @public
@@ -299,9 +299,9 @@ def metaWeblog_getUsersBlogs(user, appkey):
   # it was added in 2003, once blogger jumped ship from using
   # the blogger API
   # http://www.xmlrpc.com/stories/storyReader$2460
-  print "metaWeblog.getUsersBlogs called"
+  logger.debug( "metaWeblog.getUsersBlogs called")
   usersblogs = Blog.objects.filter(owner=user)
-  print usersblogs, "blogs for ", user
+  logger.debug( "%s blogs for %s" % (usersblogs, user))
   # return usersblogs
   res = [
     {
@@ -310,7 +310,7 @@ def metaWeblog_getUsersBlogs(user, appkey):
       'url': blog.get_url()
     } for blog in usersblogs
     ]
-  print res
+  logger.debug(res)
   return res
   
 
@@ -328,7 +328,7 @@ def mt_publishPost(user, postid):
 @authenticated(pos=2)
 def blogger_deletePost(user, appkey, post_id, publish):
     """ deletes the specified post..."""
-    print "blogger.deletePost called"
+    logger.debug("blogger.deletePost called")
     #print "GOT APPKEY", appkey
     #print "GOT PUBLISH:",publish
     post = Post.objects.get(pk=post_id)
@@ -360,7 +360,7 @@ def blogger_deletePost(user, appkey, post_id, publish):
 @authenticated()
 def mt_getCategoryList(user, blogid):
     """ takes the blogid, and returns a list of categories"""
-    print "mt_getCategoryList called"
+    logger.debug( "mt_getCategoryList called")
     categories = Category.objects.all()
     res=[]
     for c in categories:
@@ -373,7 +373,7 @@ def mt_getCategoryList(user, blogid):
 
 def post_struct(post):
     """ returns the meta-blah equiv of a post """
-    print "post_struct called"
+    logger.debug("post_struct called")
     link = full_url(post.get_absolute_url())
     categories = post.categories.all()
     # check to see if there's a more tag...
@@ -405,27 +405,27 @@ def post_struct(post):
     return struct
     
 def format_date(d):
-    print "format_date called..."
+    logger.debug( "format_date called...")
     if not d: return None
     #print 80*"x",fd    
     # return xmlrpclib.DateTime(d.isoformat())
     return xmlrpclib.DateTime(d.isoformat())
 
 def setTags(post, struct):
-    print "setTags called"
+    logger.debug( "setTags called")
     tags = struct.get('tags',None)
     if tags is None:
         post.tags = []
     else:
         # post.categories = [Category.objects.get(title__iexact=name) for name in tags]
-        print tags
+        logger.debug(tags)
 
 @public
 
 @public
 def mt_supportedMethods():
     """ returns the xmlrpc-server's list of supported methods"""
-    print "mt.listSupportedMethods called..."
+    logger.debug( "mt.listSupportedMethods called...")
     from blog import xmlrpc_views
     return xmlrpc_views.list_public_methods(blog.metaWeblog)
 
@@ -437,7 +437,7 @@ def mt_getPostCategories(user, postid):
     """
     returns a list of categories for postid *postid*
     """
-    print "mt_getPostCategories called..."
+    logger.debug( "mt_getPostCategories called...")
     try:
         p = Post.objects.get(pk=postid)
         # print "Processing", p.categories.all()
@@ -464,7 +464,7 @@ def mt_getPostCategories(user, postid):
 @public
 def mt_supportedTextFilters():
     """ tells ecto to use markdown or whatever..."""
-    print "Called mt_supportedTextFilters"
+    logger.debug( "Called mt_supportedTextFilters")
     res = []
     for key, label in FILTER_CHOICES:
         # print "%s => %s" % (label, key)
@@ -480,7 +480,7 @@ def mt_setPostCategories(user, postid, cats):
     mt version of setpostcats
     takes a primary as argument
     """
-    print "mt_setPostCategories called..."
+    logger.debug( "mt_setPostCategories called...")
     # print "Submitted with", cats
     post = Post.objects.get(pk=postid)
     # print "Old cats:", post.categories.all()
@@ -507,12 +507,12 @@ def xblog_getIdList(user,blogid):
     this function returns a (potentially very long)
     list of IDs of blog posts.
     """
-    print "xblog_getIdList called..."
+    logger.debug( "xblog_getIdList called...")
     idlist = []
-    print "getting blog..."
+    logger.debug( "getting blog...")
     blog = Blog.objects.get(id=blogid)
     posts = blog.post_set.all()
-    print "got %d posts" % posts.count()
+    logger.debug( "got %d posts" % posts.count())
     for post in posts:
         idlist.append(post.id)
     

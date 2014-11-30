@@ -8,6 +8,8 @@ from django.utils.text import Truncator
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.sites.managers import CurrentSiteManager
+from django.forms import ModelForm
+
 from external import fuzzyclock
 import datetime
 import time
@@ -246,9 +248,9 @@ class Post(models.Model):
         end_idx = text.find(end_tag)
         if start_idx==-1 or end_idx ==-1:
             return
-        #print "Got target text: starts at", start_idx
-        #print "Ends at", end_idx
-        #print "Got:", text[start_idx:end_idx]
+        logging.debug("Got target text: starts at %s" % str(start_idx))
+        logging.debug("Ends at %s" % str(end_idx))
+        logging.debug("Got: %s" % text[start_idx:end_idx])
         soup = BeautifulSoup(text)
         tags = []
         for a in soup.findAll('a'):
@@ -335,9 +337,7 @@ class Post(models.Model):
         # returns a url for the interweb
         blogid = self.blog.id
         datestr = self.pub_date.strftime("%Y/%b/%d")
-        
-        # print self.slug
-        # return settings.SITE_URL + "blog/%s/%s/" % (datestr.lower(), self.slug) 
+        logging.debug(self.slug)
         return self.get_absolute_url()
 
 
@@ -354,6 +354,7 @@ class Post(models.Model):
     def get_site_url(self):
         """
         this is the site_url
+        FIXME: don't think this is ever used...
         """
         datestr = self.pub_date.strftime("%Y/%b/%d")
         return "/".join(['/blog', datestr.lower(), self.slug]) + "/"
@@ -367,6 +368,7 @@ class Post(models.Model):
         return b
         
     # newness
+    # what's this?
     get_full_body.allow_tags = True
     
     def get_formatted_body(self, split=True):
@@ -403,6 +405,7 @@ class Post(models.Model):
     def get_pingback_count(self):
         logger.debug("get_pingback_count entered for %s" % self)
         return len(self.pingback_set.all())
+
         
 class Blog(models.Model):
     """ For different blogs..."""
@@ -422,6 +425,12 @@ class Blog(models.Model):
         # return reverse("archive-index")
         return "http://127.0.0.1:8000/blog/"
         
+class PostForm(ModelForm):
+    """
+    Django form-based class for editing posts.
+    """
+    class Meta:
+        model = Post        
         
         
 #class PodcastChannel(models.Model):
