@@ -9,6 +9,7 @@ Created by Eric Williams on 2007-04-09.
 from django.contrib.auth.decorators import login_required
 from django.template import RequestContext, Context, loader
 from django.shortcuts import render, redirect
+from django.contrib.sites.shortcuts import get_current_site
 from django.utils import timezone
 from django.contrib import messages
 
@@ -31,7 +32,70 @@ logger = logging.getLogger(__name__)
 #        gonzo = newforms.CharField(widget=newforms.HiddenInput)
 #
 
+@login_required
+def content_list(request, **kwargs):
+    """
+    This provides a list of published content...
+    """
+    logger.debug("content_view entered")
+    c = RequestContext(request)
+    
+    # get a post_list
+    site = get_current_site(request)
 
+    post_list = Post.objects.all().order_by('-pub_date')
+    logger.debug(post_list)
+    
+    c['post_list'] = post_list
+    t = loader.get_template("xblog/content_list.html")
+    return HttpResponse(t.render(c))
+    
+
+@login_required
+def edit_post_inline(request, **kwargs):
+    """
+    This provides ajax queries with an edit form...
+    """
+    logger.debug("edit_post_inline entered")
+    p = Post.objects.get(slug=kwargs['slug'])
+    # if request.POST:
+
+@login_required
+def preview_post(request, **kwargs):
+    """
+    takes the go-get-me data from the URL, and returns the formatted version of it for previewin'
+    """
+    logger.debug("preview_post called")
+    logger.debug(kwargs)
+    
+    p = Post.objects.get(slug=kwargs['slug'])
+    
+    logger.info("preview_post showing %s" % p)
+    # data = p.get_full_body()
+    
+    # put the post into a context for the template render...
+    logger.debug("opening template")
+    c = RequestContext(request)
+    c['object'] = p
+    t = loader.get_template('includes/post_template.txt')
+    
+    return HttpResponse(t.render(c))
+    
+
+@login_required
+def set_publish(request, **kwargs):
+    logger.debug("set_published entered")
+    # logger.debug(request.GET)
+    if request.GET.has_key('value'):
+        new_status = request.GET['value']
+        logger.debug("set_published: %s" % new_status )
+        p = Post.objects.get(slug=kwargs['slug'])
+        p.status = new_status
+        p.save()
+        return HttpResponse("<p>%s saved</p>" % p.title)
+    else:
+        logger.warn("Invalid set_status: %s" % request.GET['value'])
+        return "<p>Invalid request</p>"
 
 @login_required
 def edit_post(request, **kwargs):

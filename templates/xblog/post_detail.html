@@ -16,6 +16,10 @@
 		<h3><a href="{{ object.get_absolute_url }}" title="{{ object.title }}">
 		{{ object.title|safe}}
 		</a></h3>
+        {% if user.is_authenticated %}
+                <button id ="likes" data-catid="{{category.id}}" class="btn btn-mini btn-primary" type="button">Like</button>
+        {% endif %}
+        
 		<small class="metadata">
 			<span class="chronodata">Posted by <span class="vcard author">{{ object.author.get_profile.fullname }}</span> on 
 			in 

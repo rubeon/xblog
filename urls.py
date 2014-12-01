@@ -27,7 +27,8 @@ day_archive_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/$'
 # date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{2})/(?P<slug>[-\w]+)/$'
 date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/$'
 post_edit_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/edit/$'
-
+post_preview_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/preview/$'
+post_set_publish_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/set_publish/$'
 PAGE_LENGTH=10
 
 
@@ -38,7 +39,10 @@ urlpatterns = patterns('',
     url(day_archive_pattern, DayArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="day-archive"),
     url(date_detail_pattern, DateDetailView.as_view(model=Post, date_field="pub_date",), name='post-detail'),
     url(post_edit_pattern, 'xblog.views.edit.edit_post',name="post-edit" ),
+    url(post_preview_pattern, 'xblog.views.edit.preview_post', name="post-preview"),
+    url(post_set_publish_pattern, 'xblog.views.edit.set_publish', name="post-set-publish"),
     url(r'add_post/$', 'xblog.views.edit.add_post', name='post-add'),
+    url(r'content_list/$', 'xblog.views.edit.content_list', name='content-list'),
     url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH, queryset=Post.objects.filter(status='publish')), name='archive-index',  ),
 )
 
