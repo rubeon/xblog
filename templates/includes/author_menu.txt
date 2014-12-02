@@ -1,0 +1,34 @@
+{% load bootstrap3 %}
+{% comment %}
+This is designed to be the little dropdown menu at the right-hand side
+of the Navbar that let's the author do things.
+
+At the moment, it has the following:
+
+Author Name
+- Notifications (whut?)
+- Create Post
+- Manage Posts
+- Separator
+- Django Admin Site
+
+{% endcomment %}
+{% if user.is_authenticated %}
+<!-- user is authenticated -->
+            <li class="dropdown navbar-right">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">{{ user.first_name }}<span class="caret"></span></a>
+              <ul class="dropdown-menu" role="menu">
+                <li><a href="/messages/">{% bootstrap_icon "notify" %} Notifications</a></li>
+                <li><a href="/blog/add_post/">Create Post</a></li>
+                <li><a href="/blog/content_list/">Manage Content</a></li>
+                <li class="divider"></li>
+                <li class="dropdown-header">User Menu</li>
+                <li><a href="/admin/logout/">{% bootstrap_icon "log-out" %} Sign Out</a></li>
+            </ul>
+{% else %}
+    <!-- user not authenticaed -->
+            <li class="dropdown">
+                <a href="{% url "social:begin" backend='twitter' %}" ><i class="fa fa-twitter"></i> Sign in with Twitter</a>
+            </li>
+{% endif %}
+        
