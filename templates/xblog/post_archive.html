@@ -2,6 +2,9 @@
 {% load markdown_deux_tags %}
 {% load bootstrap3 %}
 {% block extratitle %}
+{% load disqus_tags %}
+{% disqus_dev %}
+
 Blog Archives
 {% endblock %}
 {% block navigation %}&nbsp;&rsaquo;<a href="/blog">Blog</a>&nbsp;&rsaquo;<a href="/blog/archive/">Archives</a>{% block yearnav %}{% endblock %}{% block monthnav %}{% endblock %}{% block daynav %}{% endblock %}{% block objectnav %}{% endblock %}
@@ -10,7 +13,7 @@ Blog Archives
 	<section id="content">
 	{% for object in object_list %}
 	{% ifchanged %}
-        <h3><a href="{{object.get_day_archive_url}}">{{ object.pub_date|date:"F d, Y" }}</h3>
+        <h3><a href="{{object.get_day_archive_url}}">{{ object.pub_date|date:"F d, Y" }}</a></h3>
     {% endifchanged %}
 	<!-- links for day -->
     {% include "includes/post_template.txt" %}
@@ -38,4 +41,9 @@ Blog Archives
           </ul>
         </nav>
       {% endblock %}
+     
+
+      
 {% endblock %}
+<!-- numreplies -->
+<!-- /numreplies -->

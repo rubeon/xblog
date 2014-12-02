@@ -1,45 +1,23 @@
 {% load static %}
+{% load disqus_tags %}
 <article>
-
-            <div class="blog-post">
-                <h2 class="blog-post-title">
-                    <a href="{{ object.get_absolute_url }}">{{ object.title }}</a>
-                </h2>
-                {% if user.is_authenticated %}
-                    <div class="btn-group" data-toggle="buttons">
-                        <button value="publish" class="btn{% if object.status == "publish" %} active{% endif %}">Publish</button>
-                        <button value="draft" class="btn{% if object.status == "draft" %} active{% endif %}">Draft</button>
-                    </div>
-                    {% comment %}
-                      <label class="btn btn-primary {% if object.status == "publish" %} active {% endif %}">
-                        <input type="radio" name="button_publish" id="button_publish" autocomplete="off" 
-                        {% if object.status == "publish" %}checked{% endif %}>Published
-                      </label>
-                      <label class="btn btn-primary {% if object.status == "draft" %} active {% endif %}">
-                        <input type="radio" name="button_draft" id="button_draft" autocomplete="off"  {% if object.status == "draft" %}checked{% endif %}>    
-                          Draft
-                      </label>
-                    </div>
-                {% endcomment %}
-                {% endif %}
-                
-				<div class="panel">
-		            <p class="blog-post-meta">That thar's the object.author:  {{ object.author.get_avatar_url }}</p>
-		            <p class="blog-post-meta">Posted by {{ object.author }} at {{ object.pub_date|date:"P"}} on {{ object.pub_date|date:"N dS, Y"}}</p>
-	            	{{ object.get_full_body|safe }}
-				</div>
-			</div>
+    <div class="blog-post">
+        {% if user.is_authenticated %}
+        <container>
+            <p>here's some auth stuff. Sssssh super-secret stuff here.</p>
+        </container>
+        {% endif %}
+		<div class="panel">
+            <h3 class="blog-post-title">
+                <a href="{{ object.get_absolute_url }}">{{ object.title }}</a>
+            </h3>
+            <p class="blog-post-meta"><a href="{{object.get_absolute_url }}#disqus_thread" data-disqus-identifier="{{ object.id }}">Comments</a></p>
+            <span class="disqus-comment-count" data-disqus-identifier="article_1_identifier">First article</span>
+		    <p class="blog-post-meta">Posted by {{ object.author.first_name }} {{ object.author.last_name }} at {{ object.pub_date|date:"P"}} 
+                on {{ object.pub_date|date:"N dS, Y"}}
+            </p>
+	        {{ object.get_full_body|safe }}
+        </div>
+	</div>
 </article>
-<script>
-// alert($(".btn-group > button.btn").name);
-// set the current status on them buttons
-// if the status gets changed, change it to 
-var num = null;
-$(".btn-group > button.btn").on("click", function(){
-    /* need to set the value to the pushed button... */
-    url = "{{ object.get_absolute_url}}set_publish/?value=" + this.value;
-    $("#messages").load(url)
-    alert($("#messages").innerHtml);
-    
-});
-</script>
+

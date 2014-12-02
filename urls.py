@@ -43,7 +43,10 @@ urlpatterns = patterns('',
     url(post_set_publish_pattern, 'xblog.views.edit.set_publish', name="post-set-publish"),
     url(r'add_post/$', 'xblog.views.edit.add_post', name='post-add'),
     url(r'content_list/$', 'xblog.views.edit.content_list', name='content-list'),
-    url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH, queryset=Post.objects.filter(status='publish')), name='archive-index',  ),
+    url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", 
+                    paginate_by=PAGE_LENGTH, 
+                    queryset=Post.objects.all().filter(status="publish").select_related('author')), 
+                    name='archive-index',  ),
 )
 
 
