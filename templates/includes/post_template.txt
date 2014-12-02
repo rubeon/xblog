@@ -1,23 +1,23 @@
 {% load static %}
-{% load disqus_tags %}
+{% load comments %}
 <article>
     <div class="blog-post">
-        {% if user.is_authenticated %}
-        <container>
-            <p>here's some auth stuff. Sssssh super-secret stuff here.</p>
-        </container>
-        {% endif %}
 		<div class="panel">
             <h3 class="blog-post-title">
-                <a href="{{ object.get_absolute_url }}">{{ object.title }}</a>
+                <a href="{{ object.get_absolute_url }}">{{ object.title }}</a>                
             </h3>
-            <p class="blog-post-meta"><a href="{{object.get_absolute_url }}#disqus_thread" data-disqus-identifier="{{ object.id }}">Comments</a></p>
-            <span class="disqus-comment-count" data-disqus-identifier="article_1_identifier">First article</span>
-		    <p class="blog-post-meta">Posted by {{ object.author.first_name }} {{ object.author.last_name }} at {{ object.pub_date|date:"P"}} 
+            {% if user.is_authenticated %}
+            <container>
+                <p><a href="{{ object.get_absolute_url }}edit/">(edit)</a></p>
+            </container>
+            {% endif %}
+            
+            {% get_comment_count for object as comment_count %}
+            <p class="blog-post-meta">{{ comment_count }} Comments | Posted by {{ object.author.first_name }} {{ object.author.last_name }} at {{ object.pub_date|date:"P"}} 
                 on {{ object.pub_date|date:"N dS, Y"}}
             </p>
 	        {{ object.get_full_body|safe }}
-        </div>
+        </div>        
 	</div>
 </article>
 

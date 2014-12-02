@@ -5,7 +5,7 @@ edit.py
 
 Created by Eric Williams on 2007-04-09.
 """
-
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.template import RequestContext, Context, loader
 from django.shortcuts import render, redirect
@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 #        gonzo = newforms.CharField(widget=newforms.HiddenInput)
 #
 
-@login_required
+
+@staff_member_required
 def content_list(request, **kwargs):
     """
     This provides a list of published content...
@@ -97,38 +98,39 @@ def set_publish(request, **kwargs):
         logger.warn("Invalid set_status: %s" % request.GET['value'])
         return "<p>Invalid request</p>"
 
-@login_required
+# @login_required
+@staff_member_required
 def edit_post(request, **kwargs):
-    logger.debug("edit_post: %s" % locals())
+    logger.debug("edit_post:")
     # PostForm = forms.form_for_model(Post)
-    p = Post.objects.get(slug=kwargs['slug'])
+    p = Post.objects.select_related('categories').get(slug=kwargs['slug'])
     if request.POST:
         logger.info("Got POST...")
-        # newdata = request.POST.copy()
-        # newform = PostForm(newdata)
-        # newform.base_fields['body'].widget=forms.Textarea(attrs={'rows':10, 'cols':50})
-        form = PostForm(request.POST)
-                
+        form = PostForm(request.POST, instance=p)
         if form.is_valid():
             logger.info("Form is valid, saving...")
-            logger.debug(form)
+            # logger.debug(form)
             model_instance = form.save(commit=False)
             model_instance.update_date = timezone.now()
             model_instance.save()
+            logger.debug("XX: %s" % p.categories.all())
             # messages.add_message(request, messages.INFO, "Saved '%s'" % model_instance.title)
             messages.info(request, "Saved '%s'" % model_instance.title)
-            return HttpResponseRedirect(model_instance.get_absolute_url())
+            # return HttpResponseRedirect(model_instance.get_absolute_url())
+            # c = RequestContext(request)
+            # c['form']=form
+            # return HttpResponseRedirect(t.render(c))
             
         else:
             logger.warn("Form data invalid; showing again")
-            logger.warn(form.errors)
-            logger.debug(form)
-            c = RequestContext(request)
-            c['form']=f = PostForm(instance=p)
-            t = loader.get_template('xblog/edit_post.html')
-            # messages.add_message(request, messages.ERROR, form.errors)
-            messages.error(request, form.errors)
-            return HttpResponse(t.render(c))
+            logger.warn("Form errors: %s" % form.errors)
+            messages.error(request, form.errors)            
+            # logger.debug(form)
+        c = RequestContext(request)
+        c['form']=form
+        t = loader.get_template('xblog/edit_post.html')
+        # messages.add_message(request, messages.ERROR, form.errors)
+        return HttpResponse(t.render(c))
             
     else:
         # f = forms.form_for_instance(p,form=PostForm)()
@@ -139,7 +141,8 @@ def edit_post(request, **kwargs):
         return HttpResponse(t.render(c))
     
 
-@login_required
+# @login_required
+@staff_member_required
 def add_post(request):
     if request.method == "POST":
         form = PostForm(request.POST)
