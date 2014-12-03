@@ -139,7 +139,16 @@ def edit_post(request, **kwargs):
         c['form']=f
         t = loader.get_template('xblog/edit_post.html')
         return HttpResponse(t.render(c))
-    
+
+def stats(request, **kwargs) :
+    """
+    renders the post_stats.txt table
+    """
+    p = Post.objects.select_related('categories').get(slug=kwargs['slug'])
+    t = loader.get_template('includes/post_stats.txt')
+    c = RequestContext(request)
+    c['readability'] = p.get_readability()
+    return HttpResponse(t.render(c))
 
 # @login_required
 @staff_member_required

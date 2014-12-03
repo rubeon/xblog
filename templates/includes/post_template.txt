@@ -6,9 +6,11 @@
             <h3 class="blog-post-title">
                 <a href="{{ object.get_absolute_url }}">{{ object.title }}</a>                
             </h3>
-            {% if user.is_authenticated %}
-            <container>
+{% if user.is_staff %}
+<container><a title="Show Statistics" href="javascript:void(0)" onclick="loadPage('{{ object.get_absolute_url }}stats/', '#stats_container-{{ object.id }}');">Show statistics</a><div id="stats_container-{{ object.id }}"></div>
+            {% comment %}
                 {% include "includes/post_stats.txt" %}
+            {% endcomment %}
                 <p><a href="{{ object.get_absolute_url }}edit/">(edit)</a></p>
             </container>
             {% endif %}

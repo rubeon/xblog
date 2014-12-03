@@ -1,4 +1,7 @@
 {% load bootstrap3 %}
+{% block extratitle %}
+  Page {{ page_obj.number }} of {{ page_obj.num_pages }}
+{% endblock %}
         <nav>
           <ul class="pager">
           {% if page_obj.has_previous %}

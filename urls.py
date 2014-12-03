@@ -27,6 +27,7 @@ day_archive_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/$'
 # date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{2})/(?P<slug>[-\w]+)/$'
 date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/$'
 post_edit_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/edit/$'
+post_stats_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/stats/$'
 post_preview_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/preview/$'
 post_set_publish_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/set_publish/$'
 template_preview_pattern=r'^template_preview/(?P<template_file>[-/\w]+)$'
@@ -52,6 +53,8 @@ urlpatterns = patterns('',
         name='post-detail'),
     url(post_edit_pattern, 'xblog.views.edit.edit_post',
         name="post-edit" ),
+    url(post_stats_pattern, 'xblog.views.edit.stats',
+        name="post-stats"), 
     url(post_preview_pattern, 'xblog.views.edit.preview_post', 
         name="post-preview"),
     url(post_set_publish_pattern, 'xblog.views.edit.set_publish', 

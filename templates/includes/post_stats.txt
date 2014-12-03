@@ -1,14 +1,5 @@
 {% load bootstrap3 %}
-{% with object.get_readability as readability %}
-    <container>
-        <div class="row">Flesch Reading Ease: {{ readability.flesch_reading_ease }}</div>
-        <div class="row">SMOG: {{ readability.smog }}</div>
-        <div class="row">Coleman Liau: {{ readability.coleman_liau }}</div>
-        <div class="row">Reader Index: {{ readability.consensus }}</div>
-    </container>
-    
-    <!-- table style! -->
-    <table>
+    <table class="table table-bordered table-condensed table-striped">
         <tr>
             <th>Metric</th><th>Value</th>
         </tr>
@@ -25,4 +16,4 @@
             <td>Reader Index:</td><td> {{ readability.consensus }}</td>
         </tr>            
     </table>
-{% endwith %}
+
