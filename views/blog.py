@@ -30,6 +30,27 @@ def tag_overview(request, tag):
     return HttpResponse(t.render(context))
 """
 
+def template_preview(request, **kwargs):
+    """
+    just let's me preview a template in context...
+    """
+    logger.debug("template_preview entered")
+    tmpl = kwargs.get("template_file", None)
+    logger.info("previewing '%s'" % tmpl)
+    if tmpl:
+        try:
+            c = {}
+            context = RequestContext(request, c)
+            t = loader.get_template("xblog/%s.html" % tmpl )
+            logger.info("Got %s" % t)
+            return HttpResponse(t.render(context))
+        except Exception, e:
+            logger.warn(e)
+            return HttpResponse(str(e))
+    else:
+        return HttpResponse("Please specify template filename")
+    
+
 def blog_overview(request):
     # shows the latest entries in all blogs...
     # get last posts...
@@ -84,6 +105,8 @@ def site_overview(request):
     context = RequestContext(request, c)
     t = loader.get_template('base_site.html')
     return HttpResponse(t.render(context))
+
+
 
 # def trackback(request, id):
 #     # cribbed from http://www.personal-api.com/train/2007/jan/31/how-add-trackbacks-django/

@@ -8,6 +8,7 @@
             </h3>
             {% if user.is_authenticated %}
             <container>
+                {% include "includes/post_stats.txt" %}
                 <p><a href="{{ object.get_absolute_url }}edit/">(edit)</a></p>
             </container>
             {% endif %}

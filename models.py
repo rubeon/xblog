@@ -11,6 +11,8 @@ from django.contrib.sites.managers import CurrentSiteManager
 from django.forms import ModelForm
 
 from external import fuzzyclock
+from external import text_stats
+
 import datetime
 import time
 import os
@@ -405,7 +407,11 @@ class Post(models.Model):
     def get_pingback_count(self):
         logger.debug("get_pingback_count entered for %s" % self)
         return len(self.pingback_set.all())
-
+        
+    def get_readability(self):
+        logger.debug("get_readability entered for %s" % self)
+        my_readability = text_stats.calculate_readability(self)
+        return my_readability
         
 class Blog(models.Model):
     """ For different blogs..."""

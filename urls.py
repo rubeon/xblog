@@ -29,24 +29,43 @@ date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<
 post_edit_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/edit/$'
 post_preview_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/preview/$'
 post_set_publish_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/set_publish/$'
+template_preview_pattern=r'^template_preview/(?P<template_file>[-/\w]+)$'
 PAGE_LENGTH=10
 
 
 urlpatterns = patterns('',
     url(r'^xmlrpc/*','xblog.views.xmlrpc_views.call_xmlrpc', {'module':'xblog.metaWeblog'}),
-    url(year_archive_pattern, YearArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="year-archive"),
-    url(month_archive_pattern, MonthArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="month-archive"),
-    url(day_archive_pattern, DayArchiveView.as_view(model=Post, date_field="pub_date", paginate_by=PAGE_LENGTH), name="day-archive"),
-    url(date_detail_pattern, DateDetailView.as_view(model=Post, date_field="pub_date",), name='post-detail'),
-    url(post_edit_pattern, 'xblog.views.edit.edit_post',name="post-edit" ),
-    url(post_preview_pattern, 'xblog.views.edit.preview_post', name="post-preview"),
-    url(post_set_publish_pattern, 'xblog.views.edit.set_publish', name="post-set-publish"),
-    url(r'add_post/$', 'xblog.views.edit.add_post', name='post-add'),
-    url(r'content_list/$', 'xblog.views.edit.content_list', name='content-list'),
+    url(year_archive_pattern, YearArchiveView.as_view(model=Post, 
+        date_field="pub_date", 
+        paginate_by=PAGE_LENGTH), 
+        name="year-archive"),
+    url(month_archive_pattern, MonthArchiveView.as_view(model=Post, 
+        date_field="pub_date", 
+        paginate_by=PAGE_LENGTH), 
+        name="month-archive"),
+    url(day_archive_pattern, DayArchiveView.as_view(model=Post, 
+        date_field="pub_date", 
+        paginate_by=PAGE_LENGTH), 
+        name="day-archive"),
+    url(date_detail_pattern, DateDetailView.as_view(model=Post, 
+        date_field="pub_date",), 
+        name='post-detail'),
+    url(post_edit_pattern, 'xblog.views.edit.edit_post',
+        name="post-edit" ),
+    url(post_preview_pattern, 'xblog.views.edit.preview_post', 
+        name="post-preview"),
+    url(post_set_publish_pattern, 'xblog.views.edit.set_publish', 
+        name="post-set-publish"),
+    url(r'add_post/$', 'xblog.views.edit.add_post', 
+        name='post-add'),
+    url(template_preview_pattern, 'xblog.views.blog.template_preview', 
+        name='template-preview'),
+    url(r'content_list/$', 'xblog.views.edit.content_list', 
+        name='content-list'),
     url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", 
-                    paginate_by=PAGE_LENGTH, 
-                    queryset=Post.objects.all().filter(status="publish").select_related('author')), 
-                    name='archive-index',  ),
+        paginate_by=PAGE_LENGTH, 
+        queryset=Post.objects.all().filter(status="publish").select_related('author')), 
+        name='archive-index',  ),
 )
 
 
