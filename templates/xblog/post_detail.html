@@ -9,5 +9,12 @@
 {% block maincontent %}
 <!-- a post -->
 {% include "includes/post_template.txt" %}
-<!-- comments -->
+<!-- includes -->
+	{% for pb in object.pingback_set.all %}
+	{% ifchanged %}<h3>Pingbacks</h3>
+		<a id="pingbacks"></a>{% endifchanged %}
+		<div class="comment">
+			<span class="comnum"><a href="{{pb.source_url}}">{{ pb.title }}</a>&rarr;<a href="{{ pb.target_url }}"></a></span>
+		</div><!-- /comment -->
+	{% endfor %}
 {% endblock %}

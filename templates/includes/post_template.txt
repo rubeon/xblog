@@ -1,5 +1,4 @@
 {% load static %}
-{% load comments %}
 <article>
     <div class="blog-post">
 		<div class="panel">
@@ -15,8 +14,8 @@
             </container>
             {% endif %}
             
-            {% get_comment_count for object as comment_count %}
-            <p class="blog-post-meta">{{ comment_count }} Comments | Posted by {{ object.author.first_name }} {{ object.author.last_name }} at {{ object.pub_date|date:"P"}} 
+
+            <p class="blog-post-meta">Posted by {{ object.author.first_name }} {{ object.author.last_name }} at {{ object.pub_date|date:"P"}} 
                 on {{ object.pub_date|date:"N dS, Y"}}
             </p>
 	        {{ object.get_full_body|safe }}
