@@ -6,18 +6,19 @@ edit.py
 Created by Eric Williams on 2007-04-09.
 """
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.template import RequestContext, Context, loader
 from django.shortcuts import render, redirect
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils import timezone
 from django.contrib import messages
-
+from django.forms.models import inlineformset_factory
+from django.contrib.auth.models import User 
 
 # from xcomments.models import FreeComment
 from django import forms 
 from django.http import HttpResponseRedirect, HttpResponse, Http404
-from xblog.models import Post, PostForm
+from xblog.models import Post, PostForm, Blog, filters
 
 import logging
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ logger = logging.getLogger(__name__)
 #
 
 
-@staff_member_required
+@permission_required("xblog.change_post")
 def content_list(request, **kwargs):
     """
     This provides a list of published content...
@@ -52,7 +53,7 @@ def content_list(request, **kwargs):
     return HttpResponse(t.render(c))
     
 
-@login_required
+@permission_required("xblog.change_post")
 def edit_post_inline(request, **kwargs):
     """
     This provides ajax queries with an edit form...
@@ -83,7 +84,7 @@ def preview_post(request, **kwargs):
     return HttpResponse(t.render(c))
     
 
-@login_required
+@permission_required("xblog.change_post")
 def set_publish(request, **kwargs):
     logger.debug("set_published entered")
     # logger.debug(request.GET)
@@ -99,7 +100,7 @@ def set_publish(request, **kwargs):
         return "<p>Invalid request</p>"
 
 # @login_required
-@staff_member_required
+@permission_required("xblog.change_post")
 def edit_post(request, **kwargs):
     logger.debug("edit_post:")
     # PostForm = forms.form_for_model(Post)
@@ -120,6 +121,8 @@ def edit_post(request, **kwargs):
             # c = RequestContext(request)
             # c['form']=form
             # return HttpResponseRedirect(t.render(c))
+            # next line is required to save the many-to-many relations
+            form.save_m2m()
             
         else:
             logger.warn("Form data invalid; showing again")
@@ -134,6 +137,7 @@ def edit_post(request, **kwargs):
             
     else:
         # f = forms.form_for_instance(p,form=PostForm)()
+
         f = PostForm(instance=p)
         c = RequestContext(request)
         c['form']=f
@@ -151,18 +155,23 @@ def stats(request, **kwargs) :
     return HttpResponse(t.render(c))
 
 # @login_required
-@staff_member_required
+@permission_required("xblog.add_post")
 def add_post(request):
     if request.method == "POST":
         form = PostForm(request.POST)
+        
         if form.is_valid():
+            logging.debug(request.POST)
             # commit=False means the form doesn't save at this time.
             # commit defaults to True which means it normally saves.
             model_instance = form.save(commit=False)
             model_instance.update_date = timezone.now()
             model_instance.save()
-            # messages.add_message(request, messages.INFO, "Added '%s'" % model_instance.title)
+            # messages.add_message(request, messages.INFO, "Added '%s'" % model_instance.title)
+            logging.debug(form)
+            logging.debug(model_instance.categories)
             messages.info(request, "Added '%s'" % model_instance.title)
+            form.save_m2m()
             return redirect(model_instance.get_absolute_url())
         else:
             # messages.add_message(request, messages.ERROR, form.errors)
@@ -172,7 +181,19 @@ def add_post(request):
             t = loader.get_template('xblog/edit_post.html')
             return HttpResponse(t.render(c))
     else:
-        form = PostForm()
+        author = request.user
+        # set the default values
+        default_blog = Blog.objects.get(owner=request.user)
+        logging.debug("Blog %s" % default_blog)
+        author = request.user
+        logging.debug("Author: %s" % author)
+        default_status = "draft"
+        default_text_filter = "markdown"
+        form = PostForm(initial={"author":request.user, 
+                                 "blog" : default_blog, 
+                                 "status" : default_status, 
+                                 "text_filter": default_text_filter})
+        
 
     return render(request, "xblog/edit_post.html", {'form': form})
     

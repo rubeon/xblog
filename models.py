@@ -373,6 +373,10 @@ class Post(models.Model):
     # what's this?
     get_full_body.allow_tags = True
     
+    @property
+    def full_body(self):
+        return self.get_full_body()
+    
     def get_formatted_body(self, split=True):
         """ returns the formatted version of the body text"""
         logger.debug("get_formatted_body entered for %s" % self)
@@ -438,8 +442,9 @@ class PostForm(ModelForm):
     class Meta:
         model = Post
         # fields = ["pub_date", "title",  "enable_comments", "body", "text_filter", "blog", "author"]
-        exclude = ['update_date', 'create_date', 'slug', ]
-        
+        # exclude = ['update_date', 'create_date', 'slug', ]
+        fields = ['title', 'body',  'categories', 'text_filter', 'blog', 'author', 'status']
+
         
 #class PodcastChannel(models.Model):
 #    """ model for the podcast, sorta like a blog..."""
