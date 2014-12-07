@@ -1,4 +1,14 @@
-{% extends "base.html" %}{% load static %}{% block extrahead %}<link rel="stylesheet" href="{% static "xblog-css/split-pane.css" %}" type="text/css">{% endblock %}{% load bootstrap3 %}{% block extrajs %}<script>
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load cache %}
+{% block extrahead %}
+{% cache 0 splitpane %}
+<link rel="stylesheet" href="{% static "xblog-css/split-pane.css" %}" type="text/css">
+{% endcache %}
+{% endblock %}
+{% load bootstrap3 %}
+{% block extrajs %}
+<script>
 /*
 function loadPage(urlToLoad) {
     $('#preview_pane').load(urlToLoad, function () {

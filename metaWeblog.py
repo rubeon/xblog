@@ -30,17 +30,18 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 
 import logging
-logger = logging.getLogger("xblog")
+logger = logging.getLogger(__name__)
 
 def authenticated(pos=1):
     # tells the method that the visitor is authenticated
+    logger.debug("authenticated entered")
     def _decorate(func):
         def _wrapper(*args, **kwargs):
             username = args[pos+0]
             password = args[pos+1]
             args = args[0:pos]+args[pos+2:]
             try:
-                # print "Username: ", username
+                logger.info("Username: %s" % username)
                 # print "Password: ", password
                 user = User.objects.get(username__exact=username)
             except User.DoesNotExist:
@@ -66,19 +67,36 @@ def full_url(url):
 def metaWeblog_getCategories(user, blogid, struct={}):
     """ 
     takes the blogid, and returns a list of categories
+    struct:
+    string categoryId
+    string parentId
+    string categoryName
+    string categoryDescription
+    string description: Name of the category, equivalent to categoryName.
+    string htmlUrl
+    string rssUrl
+    
+    
     """
     logger.debug("metaWeblog_getCategories called")
     categories = Category.objects.all()
     res=[]
     for c in categories:
         struct={}
+        struct['categoryId'] = str(c.id)
+        struct['parentId'] = str(0)
         struct['categoryName']= c.title
-        struct['description'] = c.description
-        struct['htmlUrl'] = ""
-        struct['rssUrl'] = ""
+        if c.description == '':
+            struct['categoryDescription'] = c.title
+        else:
+            struct['categoryDescription'] = c.description
+        struct['description'] = struct['categoryDescription']
+        struct['htmlUrl'] = "http://youbitch.org/"
+        struct['rssUrl'] = "http://youbitch.org"
+        
         res.append(struct)
+    logger.debug(res)
     return res
-
 
 @public
 @authenticated()
@@ -134,9 +152,13 @@ def metaWeblog_newMediaObject(user, blogid, struct):
  
 @public
 @authenticated()
-def metaWeblog_newPost(user, blogid, struct, publish):
+def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
     """ mt's newpost function..."""
     logger.debug( "metaWeblog.newPost called")
+    logger.debug(user)
+    logger.debug(blogid)
+    logger.debug(struct)
+    logger.debug(publish)
     body = struct['description']
     author = user # Author.objects.get(user=user)
     blog = Blog.objects.get(pk=blogid)
@@ -374,7 +396,8 @@ def mt_getCategoryList(user, blogid):
 def post_struct(post):
     """ returns the meta-blah equiv of a post """
     logger.debug("post_struct called")
-    link = full_url(post.get_absolute_url())
+    # link = full_url(post.get_absolute_url())
+    link = post.get_absolute_url()
     categories = post.categories.all()
     # check to see if there's a more tag...
     if post.body.find('<!--more-->') > -1:
@@ -517,4 +540,38 @@ def xblog_getIdList(user,blogid):
         idlist.append(post.id)
     
     return idlist
-        
+
+@authenticated(pos=0)
+def wp_getUsersBlogs(user):
+    logger.debug( "blogger.getUsersBlogs called")
+    # print "Got user", user
+    usersblogs = Blog.objects.filter(owner=user)
+    logger.debug( "%s blogs for %s" % (usersblogs, user))
+    # return usersblogs
+    res = [
+    {
+    'blogid':str(blog.id),
+    'blogName': blog.title,
+    'url': blog.get_url()
+    } for blog in usersblogs
+    ]
+    logger.debug(res)
+    return res
+
+@authenticated(pos=1)
+def wp_getOptions(user, blog_id):
+    """
+    int blog_id
+    string username
+    string password
+    struct
+        string option
+    return:
+        array
+        struct
+            string desc
+            string readonly
+            string option
+    """
+    logger.debug("wp.getOptions entered")
+    return [{}]

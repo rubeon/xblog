@@ -433,7 +433,8 @@ class Blog(models.Model):
     def get_url(self):
         # return "".join([settings.SITE_URL,"blog","/", str(self.id)]) + "/"
         # return reverse("archive-index")
-        return "http://127.0.0.1:8000/blog/"
+        # return "http://127.0.0.1:8000/blog/"
+        return "http://%s/" % self.site.domain
         
 class PostForm(ModelForm):
     """
