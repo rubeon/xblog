@@ -87,10 +87,13 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
         p = post
         if source_uri[0]=="/":
           # this is a site-absolute url, let's make it a real one...
-          source_uri = settings.SITE_URL + source_uri[1:]
+          # source_uri = settings.SITE_URL + source_uri[1:]
+          source_url = "%s/%s" % (Post.blog.get_url(), source_uri[1:])
+          logger.debug("source_url: %s" %  source_url)
           
         logger.info("Sending ping...")
         pingback_address = get_pingback_url(target_uri)
+        logger.info("pingback_address: %s" % pingback_address)
         
         if pingback_address:
             try:
@@ -165,7 +168,7 @@ def pingback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=F
 def slug_from_uri(uri):
     # take the re from the uri.
     # pat = "http://ericbook.local:8000/blog/2007/mar/05/a-shadow-world-within-a-world/"
-    pat = r"%sblog/(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/$" % settings.SITE_URL
+    pat = r"%sblog/(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/$" % "http://dev.ehw.io" #FIXME
     c = re.compile(pat)
     m = c.match(uri)
     if m:
@@ -248,7 +251,8 @@ def trackback_ping(source_uri, target_uri, check_spam=True, post=None, outgoing=
     logger.debug("trackback_ping called...")
     if source_uri[0]=="/":
        # this is a site-absolute url, let's make it a real one...
-       source_uri = settings.SITE_URL + source_uri[1:]
+       # source_uri = settings.SITE_URL + source_uri[1:]
+       source_uri = "http://dev.ehw.io/%s" % source_uri[1:] #FIXME
                 
     logger.info( "Ping from: %s" % source_uri)
     logger.info( "Ping to: %s" % target_uri)

@@ -84,15 +84,16 @@ def metaWeblog_getCategories(user, blogid, struct={}):
     for c in categories:
         struct={}
         struct['categoryId'] = str(c.id)
-        struct['parentId'] = str(0)
+        # struct['parentId'] = str(0)
         struct['categoryName']= c.title
-        if c.description == '':
-            struct['categoryDescription'] = c.title
-        else:
-            struct['categoryDescription'] = c.description
-        struct['description'] = struct['categoryDescription']
-        struct['htmlUrl'] = "http://youbitch.org/"
-        struct['rssUrl'] = "http://youbitch.org"
+        struct['parentId'] = ''
+        struct['title'] = c.title
+        # if c.description == '':
+        #     struct['categoryDescription'] = c.title
+        # else:
+        #     struct['categoryDescription'] = c.description
+        # struct['description'] = struct['categoryDescription']
+        struct['htmlUrl'] = "http://dev.ehw.io"
         
         res.append(struct)
     logger.debug(res)
@@ -127,7 +128,7 @@ def metaWeblog_newMediaObject(user, blogid, struct):
     #    # some schmoe program wrote a slash at the beginning...
     #    savename = "." + savename # take that...
 
-    logger.debug( "savename", savename)
+    logger.debug( "savename: %s" %  savename)
     # renametmpl = "%2d-%s"
     # i = 1
     # while os.path.exists(os.path.join(upload_dir,savename)):
@@ -155,10 +156,10 @@ def metaWeblog_newMediaObject(user, blogid, struct):
 def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
     """ mt's newpost function..."""
     logger.debug( "metaWeblog.newPost called")
-    logger.debug(user)
-    logger.debug(blogid)
-    logger.debug(struct)
-    logger.debug(publish)
+    logger.debug("user: %s" % user)
+    logger.debug("blogid: %s" % blogid)
+    logger.debug("struct: %s" % struct)
+    logger.debug("publish: %s" % publish)
     body = struct['description']
     author = user # Author.objects.get(user=user)
     blog = Blog.objects.get(pk=blogid)
@@ -170,7 +171,7 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
         create_date = pub_date,
         update_date = pub_date,
         pub_date = pub_date,
-        status = publish and 'Published' or 'Draft',
+        status = publish and 'publish' or 'draft',
         blog = blog,
         author =author
     )
@@ -178,6 +179,19 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
     post.prepopulate()
     logger.debug( "Saving")
     post.save()
+    categories = struct.get("categories", [])
+    logger.debug("Setting categories: %s" % categories)
+    clist = []
+    for category in categories:
+        try:
+            c = Category.objects.filter(blog=blog, title=category)[0]
+            logger.debug("Got %s" % c)
+            clist.append(c)
+        except Exception, e:
+            logger.warn(str(e))
+    post.categories=clist
+    post.save()
+    logger.info("Post %s saved" % post)
     logger.info("Setting Tags")
     setTags(post, struct)
     logger.debug("Handling Pings")
@@ -504,21 +518,21 @@ def mt_setPostCategories(user, postid, cats):
     takes a primary as argument
     """
     logger.debug( "mt_setPostCategories called...")
-    # print "Submitted with", cats
+    logger.info("Submitted with %s" % cats)
     post = Post.objects.get(pk=postid)
-    # print "Old cats:", post.categories.all()
+    logger.debug("Old cats: %s" % post.categories.all())
     post.categories.clear()
     catlist = []
     for cat in cats:
         category = Category.objects.get(pk=cat['categoryId'])
         # print "Got", category
         if cat.has_key('isPrimary') and cat['isPrimary']:
-            # print "Got primary category", cat
+            logger.debug("Got primary category '%s'" % cat)
             post.primary_category_name = category
         post.categories.add(category)
-    # print "New cats:", post.categories.all()
+    logger.debug("New cats: %s" % post.categories.all())
     post.save()
-    # print "Done."
+    logger.debug(" mt_setPostCategories Done.")
     return True
 
 
@@ -543,7 +557,7 @@ def xblog_getIdList(user,blogid):
 
 @authenticated(pos=0)
 def wp_getUsersBlogs(user):
-    logger.debug( "blogger.getUsersBlogs called")
+    logger.debug( "wp.getUsersBlogs called")
     # print "Got user", user
     usersblogs = Blog.objects.filter(owner=user)
     logger.debug( "%s blogs for %s" % (usersblogs, user))
@@ -559,7 +573,7 @@ def wp_getUsersBlogs(user):
     return res
 
 @authenticated(pos=1)
-def wp_getOptions(user, blog_id):
+def wp_getOptions(user, blog_id, struct={}):
     """
     int blog_id
     string username
@@ -574,4 +588,80 @@ def wp_getOptions(user, blog_id):
             string option
     """
     logger.debug("wp.getOptions entered")
-    return [{}]
+    logger.debug("user: %s" % user)
+    logger.debug("blog_id: %s" % blog_id)
+    logger.debug("struct: %s" % struct)
+    blog = Blog.objects.get(pk=blog_id)
+    admin_url = {
+        'value': urlparse.urljoin(blog.get_url(), "admin"),
+        'desc': "The URL to the admin area",
+        'readonly': True,
+    }
+    
+    
+    
+    res = { 
+        'admin_url':admin_url,
+        'blog_id': { 'desc':'Blog ID', 'readonly':True, 'value': blog.id }, 
+        'blog_public' : {'desc': 'Privacy access', 'readonly': True, 'value': '1' },
+        'blog_tagline' : {'desc': 'Site Tagline', 'readonly': False, 'value': blog.description },
+        'blog_title': {'desc': 'Site title', 'readonly': False, 'value': blog.title },
+        'blog_url' : { 'desc': 'Blog Address (URL)', 'readonly': True, 'value': blog.get_url() }, 
+        
+    }
+    
+    logger.debug("res: %s" % res)
+    
+    return res
+
+def wp_getTags(blog_id, user, password):
+    """
+    Get an array of users for the blog. [sic?]
+    Parameters
+    int blog_id
+    string username
+    string password
+    Return Values
+    array
+    struct
+    int tag_id
+    string name
+    int count
+    string slug
+    string html_url
+    string rss_url
+    
+    [{
+	  'count': '1',
+	  'html_url': 'http://subcriticalorg.wordpress.com/tag/apocalypse/',
+	  'name': 'apocalypse',
+	  'rss_url': 'http://subcriticalorg.wordpress.com/tag/apocalypse/feed/',
+	  'slug': 'apocalypse',
+	  'tag_id': '135830'},
+    }]
+    
+    """
+    logger.debug("wp.getTags entered")
+    ##FIXME check the user password...
+    logger.debug("user: %s" % user)
+    logger.debug("blog_id: %s" % blog_id)
+    blog = Blog.objects.get(pk=blog_id)
+    logger.debug(blog)
+    ## FIXME: Tags are shared across blogs... :-/
+    res = []
+    for tag in Tag.objects.all():
+        logger.debug("Processing %s" % tag)
+        res.append({
+        'count' : tag.post_set.count(),
+        'html_url' : urlparse.urljoin(blog.get_url(),"%s/%s" % ("tag",tag.title)),
+        'name' : tag.title,
+        'rss_url': urlparse.urljoin(blog.get_url(),"%s/%s/%s" % ("tag",tag.title, 'feed')), 
+        'slug':tag.title,
+        'tag_id':tag.id,
+        })
+    
+    logger.debug("res: %s" % res)
+    return res
+    
+    
+    

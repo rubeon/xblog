@@ -21,6 +21,7 @@ def calculate_readability(post):
     except Exception, e:
         logger.warn(e)
         logger.debug(text)
+        print e
         res = {}
     return res
 

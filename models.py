@@ -293,7 +293,8 @@ class Post(models.Model):
     def get_archive_url(self):
         # returns the path in archive
         logger.debug("get_archive_url entered for %s" % self)
-        archive_url = settings.SITE_URL + "blog/archive/"
+        archive_url = "%s/%s" % (self.blog.get_url(), "blog/archive/")
+        # archive_url = settings.SITE_URL + "blog/archive/"
         return archive_url
         
     def get_year_archive_url(self):
