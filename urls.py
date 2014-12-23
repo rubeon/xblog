@@ -35,7 +35,8 @@ PAGE_LENGTH=10
 
 
 urlpatterns = patterns('',
-    url(r'^xmlrpc/*','xblog.views.xmlrpc_views.call_xmlrpc', {'module':'xblog.metaWeblog'}),
+    # remove xmlrpc view; use django_xmlprc instead
+    # url(r'^xmlrpc/*','xblog.views.xmlrpc_views.call_xmlrpc', {'module':'xblog.metaWeblog'}),
     url(year_archive_pattern, YearArchiveView.as_view(model=Post, 
         date_field="pub_date", 
         paginate_by=PAGE_LENGTH), 
@@ -65,6 +66,8 @@ urlpatterns = patterns('',
         name='template-preview'),
     url(r'content_list/$', 'xblog.views.edit.content_list', 
         name='content-list'),
+    url(r'export_opml/$', 'xblog.views.blog.export_opml',
+        name='export-opml'),
     url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", 
         paginate_by=PAGE_LENGTH, 
         queryset=Post.objects.all().filter(status="publish").select_related('author')), 
