@@ -11,6 +11,10 @@ from django.template import RequestContext, Context, loader
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from xblog.models import *
 
+
+from xml.etree import ElementTree
+from xml.dom import minidom
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -106,8 +110,51 @@ def site_overview(request):
     t = loader.get_template('base_site.html')
     return HttpResponse(t.render(context))
 
+def export_opml(request):    
+    """
+    export Links to opml
+    this was lifted from the "django_feedreader" application, which you 
+    should definitely check out: https://github.com/ahernp/django-feedreader
+    """
+    root = ElementTree.Element('opml')
+    root.set('version', '2.0')
+    head = ElementTree.SubElement(root, 'head')
+    title = ElementTree.SubElement(head, 'title')
+    title.text = 'XBlog Blogroll Feeds'
+    body = ElementTree.SubElement(root, 'body')
 
+    # feeds = Feed.objects.filter(group=None)
+    feeds = Link.objects.filter(category=None)
+    for feed in feeds:
+        if feed.rss !="":
+            feed_xml = ElementTree.SubElement(body,
+                                  'outline',
+                                  {'type': 'rss',
+                                   'text': feed.link_name,
+                                   'xmlUrl': feed.rss,
+                                   }
+            )
 
+    groups = LinkCategory.objects.all()
+    for group in groups:
+        group_xml = ElementTree.SubElement(body,
+                               'outline',
+                               {'text': group.title,
+                                }
+        )
+        feeds = Link.objects.filter(category=group).exclude(rss="")
+        for feed in feeds:
+            feed_xml = ElementTree.SubElement(group_xml,
+                                  'outline',
+                                  {'type': 'rss',
+                                   'text': feed.link_name,
+                                   'xmlUrl': feed.rss,
+                                   }
+            )
+    response = HttpResponse(content_type='text/xml')
+    response['Content-Disposition'] = 'attachment; filename="feedreader.opml"'
+    response.write(minidom.parseString(ElementTree.tostring(root, 'utf-8')).toprettyxml(indent="  "))
+    return response
 # def trackback(request, id):
 #     # cribbed from http://www.personal-api.com/train/2007/jan/31/how-add-trackbacks-django/
 #     (post, meta) = (request.POST, request.META)
