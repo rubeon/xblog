@@ -85,5 +85,3 @@ Now we're talking. Maybe I should take up blogging again?"""
     # test_data = "I think there are 50 ways to leave your lover..."
     main(test_data)
     
-else:
-    print __name__
