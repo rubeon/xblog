@@ -15,6 +15,8 @@ map an author to the logged-in guy
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.models import User 
+
 from optparse import make_option
 from xblog.models import Category, Blog, Post, Author
 import sys
@@ -40,7 +42,8 @@ date_fields = [ 'date_created',
                 'post_date', 
                 'post_date_gmt',
                 'post_modified',
-                'post_modified_gmt']
+                'post_modified_gmt'
+            ]
 # create ALL the posts
 
 def notify(msg):
@@ -53,6 +56,7 @@ class Command(BaseCommand):
     """ Import blog posts from a remote blog """
     option_list = BaseCommand.option_list + (
             make_option("-u", "--username", dest="username", default=[], metavar="username", help="User name for remote API endpoint"),
+            make_option("-o", "--owner", dest="owner", metavar="ownername", help="Owner's Django user name"),
             make_option("-a", "--all", dest="all_blogs", action="store_true", help="Import all user blogs from API endpoint"),
             make_option("-x", "--api-endpoint", dest="api_endpoint", default=None, metavar="API endpoint", help="Direct URL for remote API endpoint"),
             make_option("-p", "--password", dest="password", default=[], help="Password for remote API connection"),
@@ -117,7 +121,10 @@ class Command(BaseCommand):
         notify( ",".join(["'%s'" % blog['blogName'] for blog in active_blogs]))
         
         xblog = Blog.objects.get(id=int(xblog_id))
-        xblog_author = Author.objects.all()[0] # FIXME: should probably try to get fancy and match email address or some'n
+        # xblog_author = User.objects.all()[0] # FIXME: should probably try to get fancy and match email address or some'n
+        owner_username = options.get("owner") or raw_input("Owner's username").strip()
+        # print "|%s|" % owner_username
+        xblog_author = User.objects.get(username=owner_username)
         categories = []
         posts = []
                 
@@ -144,38 +151,67 @@ class Command(BaseCommand):
                     counter = counter + 1
                     # print "[%3d] %s (%s) %s" % (counter, post['post_title'], post['post_date'], post['post_status']),
                     notify("Title: %s" % post['post_title'])
-                    notify("Date: %s" % post['post_date'])
-                    notify("Status: %s" % post['post_status'])
-                    notify("Author: %s" % post['post_author'])
-                    notify("Type: %s" % post['post_type'])
-                    notify(10 * "-")
+                    # notify("Date: %s" % post['post_date'])
+                    # notify("Status: %s" % post['post_status'])
+                    # notify("Author: %s" % post['post_author'])
+                    # notify("Type: %s" % post['post_type'])
+                    # notify(10 * "-")
                     # print post['post_content'] 
                 filter['offset']+=len(posts)
             
             notify("Downloaded %d posts" % len(all_posts))
+            
 
-
-            category_map = {}
-            for category in categories:
-                category_map[category['categoryId']] = self.get_or_create_category(category, xblog)
+            # category_map = {}
+            # for category in categories:
+            #     category_map[category['categoryId']] = self.get_or_create_category(category, xblog)
                 
             for post in all_posts:
-                pprint( post)
-                categories = self.get_post_categories(post, xblog)
-                
-                # FIXME: start here :-)
-                # post['title'] =         post_title
-                # post['pub_date'] =      
-                # post['update_date'] = 
-                # post['create_date'] = 
-                # post['enable_comments'] =
-                # post['categories'] = categories
-                # post['author'] = xblog_author
-                
-                
-                # categories = post['']
-                # xblog_category = category_map
-            
+                xblog_post = self.get_or_create_post(post, xblog)
+                xblog_post.author = xblog_author
+                if options.get('dry_run'):
+                    notify("Not saving '%s'" % xblog_post.title)
+                else:
+                    xblog_post.save()
+                    categories = self.get_post_categories(post, xblog)
+                    for category in categories:
+                        xblog_post.categories.add(category)
+                    xblog_post.save()
+    
+    def get_or_create_post(self, post, xblog):
+        # takes a wp.getPost object and set of categories, and creates 
+        # an xblog post object from it
+        
+        # extract the relevant information from the post
+        keys = post.keys()
+        keys.sort()
+        # pprint(keys)
+        # try to find if this post has already been imported?
+        try:
+            xpost = Post.objects.get(guid=post['guid'])
+            return xpost
+        except ObjectDoesNotExist, e:
+            pass
+        
+        xblog_post = {}
+        xblog_post['pub_date'] = post['post_date_gmt']
+        xblog_post['update_date'] = post['post_modified_gmt']
+        xblog_post['create_date'] = post['post_date_gmt']
+        xblog_post['enable_comments'] = False
+        xblog_post['title'] = post['post_title']
+        # # xblog_post['slug'] = 
+        xblog_post['body'] = post['post_content']
+        xblog_post['summary'] = post['post_excerpt']
+        # xblog_post['categories'] = self.get_post_categories(post, xblog)
+        # xblog_post['author'] = 
+        xblog_post['status'] = post['post_status']
+        xblog_post['guid'] = post['guid']
+        xblog_post['blog'] = xblog
+        # print xblog_post
+        
+        xpost = Post(**xblog_post)
+        return xpost
+    
     def get_or_create_xblog(self, xblog_id):
         # looks for a blog matching either the
         xblog = Blog.objects.get(id=xblog_id)
@@ -211,7 +247,7 @@ class Command(BaseCommand):
             if term['taxonomy'] == 'category':
                 mycat = {'description':term['name']}
                 category_list.append(self.get_or_create_category(mycat, xblog))
-        print category_list
+        # print category_list
         return category_list
 
 
@@ -219,9 +255,9 @@ class Command(BaseCommand):
         """
         Gets the API endpoint as encoded in the blog's headers
         """
-        print "Opening %s..." % page
+        # print "Opening %s..." % page
         data = urllib.urlopen(page).read()
-        print "Got %d bytes" % len(data)
+        # print "Got %d bytes" % len(data)
         soup = BeautifulSoup.BeautifulSoup(data)
         xmlrpc_url = [link.get('href') for link in soup.findAll("link", rel="EditURI", type="application/rsd+xml")]
         if len(xmlrpc_url):
@@ -248,16 +284,18 @@ def date_to_str(post):
         if key in date_fields:
             # print dir(post[key])
             post[key] = str(post[key].isoformat())
-            print "* %s:%s (%s)" % (key, post[key], type(post[key]))
+            # print "* %s:%s (%s)" % (key, post[key], type(post[key]))
         else:
-            print "- |%s| not in date_fields" % key
+            # print "- |%s| not in date_fields" % key
+            pass
     
-    for key in post.keys():
-        print "- %s:%s (%s)" % (key, post[key], type(post[key]))
+    # for key in post.keys():
+        # print "- %s:%s (%s)" % (key, post[key], type(post[key]))
         # if type(post[k]) != type(''):
         #     print "Non-string: %s\t%s" % (k, type(post[k]))
     
-    pprint( post)
+    
+    # pprint( post)
     
     return post
 

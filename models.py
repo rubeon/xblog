@@ -208,6 +208,8 @@ class Post(models.Model):
     # post content 
     title = models.CharField(blank=False, max_length=255)
     slug = models.SlugField(max_length=100)
+    # adding, because it's a good idea (mainly for importing!)
+    guid = models.CharField(blank=True, max_length=255)
     body = models.TextField(blank=True)
     summary = models.TextField(blank=True)
     categories = models.ManyToManyField(Category)
@@ -238,6 +240,8 @@ class Post(models.Model):
             # do an auto-summarize here.
             # now what could that be?
             pass
+        if not self.guid or self.guid=='':
+            self.guid = self.get_absolute_url()
 
     def handle_technorati_tags(self):
         # takes the post, and returns the technorati links in them...
@@ -445,7 +449,7 @@ class PostForm(ModelForm):
         model = Post
         # fields = ["pub_date", "title",  "enable_comments", "body", "text_filter", "blog", "author"]
         # exclude = ['update_date', 'create_date', 'slug', ]
-        fields = ['title', 'body',  'categories', 'text_filter', 'blog', 'author', 'status']
+        fields = ['title', 'body',  'categories', 'text_filter', 'blog', 'author', 'status', 'guid']
 
         
 #class PodcastChannel(models.Model):

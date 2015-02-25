@@ -42,7 +42,7 @@ class PostAdmin(admin.ModelAdmin):
     
     
     fieldsets = (
-      (None, {'fields':('title','slug',)}),
+      (None, {'fields':('title','slug','guid')}),
       ('Date & Time',{'fields':("pub_date","update_date", "create_date")}),
       (None, {'fields':('text_filter','body',)}),
       ('Metadata', {'fields':(
