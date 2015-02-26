@@ -28,9 +28,9 @@ import BeautifulSoup
 import json
 import getpass
 from pprint import pprint
-username = "subcriticalorg"
+# username = "subcriticalorg"
 # password = getpass.getpass()
-password = open(os.path.expanduser("~/pw.txt")).read().strip()
+# password = open(os.path.expanduser("~/pw.txt")).read().strip()
 # wp_url = "https://subcriticalorg.wordpress.com/xmlrpc.php"
 # wp = xmlrpclib.ServerProxy(wp_url, use_datetime=True)
 
