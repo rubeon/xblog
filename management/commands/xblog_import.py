@@ -222,11 +222,12 @@ class Command(BaseCommand):
         # print category
         # slug = self.get_category_slug(category)
         cat = {}
+        print category.keys()
         try:
             xblog_category = Category.objects.get(title=category['description'])
         except ObjectDoesNotExist, e:
             cat['title'] = category['description']
-            cat['description'] = category['categoryDescription']
+            # cat['description'] = category['categoryDescription']
             cat['blog'] = xblog
             
             xblog_category = Category(**cat)

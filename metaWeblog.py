@@ -104,46 +104,16 @@ def metaWeblog_getCategories(user, blogid, struct={}):
 def metaWeblog_newMediaObject(user, blogid, struct):
     """ returns struct with url..."""
     logger.debug( "metaWeblog_newMediaObject called")
-    # upload_dir = os.path.join(settings.MEDIA_ROOT,'blog_uploads',user.username)
-    # upload_url = "%s/%s/%s" % (settings.MEDIA_URL, 'blog_uploads', urllib.quote(user.username))
-    # 
-    # print upload_dir
-    # print upload_url
-    # # print "Using upload", upload_url
-    # # print "Using upload dir", upload_dir
-    # if not os.path.exists(upload_dir):
-    #     # create this directory....
-    #     # print "Creating directory", upload_dir
-    #     os.makedirs(upload_dir)
-
     upload_dir = "blog_uploads/%s" % urllib.quote(user.username)
-    
     bits       = struct['bits']
     mime       = struct['type']
-    name       = struct['name']
-    
-    # print "got", mime, name
+    name       = struct['name']    
     savename   = name
-    # if os.path.isabs(savename):
-    #    # some schmoe program wrote a slash at the beginning...
-    #    savename = "." + savename # take that...
-
     logger.debug( "savename: %s" %  savename)
-    # renametmpl = "%2d-%s"
-    # i = 1
-    # while os.path.exists(os.path.join(upload_dir,savename)):
-    #     savename = renametmpl % (i,savename)
-    #     i = i + 1
-
     save_path = os.path.join(upload_dir, savename)
     logger.debug("Saving to %s" % save_path)
-    # f = open(os.path.join(upload_dir,savename),'w')
-    
     path = default_storage.save(save_path, ContentFile(bits))
     logger.debug("Path: %s" % path)
-    
-    # f.write("%s" % bits)
-    # f.close()
     res = {}
     res['url']= default_storage.url(path)
     logger.debug(res)
@@ -161,7 +131,6 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
     logger.debug("struct: %s" % struct)
     logger.debug("publish: %s" % publish)
     body = struct['description']
-    author = user # Author.objects.get(user=user)
     blog = Blog.objects.get(pk=blogid)
     pub_date = datetime.datetime.now()
     
@@ -173,11 +142,11 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
         pub_date = pub_date,
         status = publish and 'publish' or 'draft',
         blog = blog,
-        author =author
+        author =user
     )
-    # print "Prepopulate"
     post.prepopulate()
     logger.debug( "Saving")
+    # need to save beffore setting many-to-many fields, silly django
     post.save()
     categories = struct.get("categories", [])
     logger.debug("Setting categories: %s" % categories)
@@ -228,7 +197,7 @@ def metaWeblog_editPost(user, postid, struct, publish):
         post.body = body
         # todo - parse out technorati tags
     if user:
-        post.author = user # Author.objects.get(user=user)
+        post.author = user 
     
     if publish:
       post.status = "publish"
@@ -236,11 +205,9 @@ def metaWeblog_editPost(user, postid, struct, publish):
       post.status = "draft"
       
     setTags(post, struct)
-    # res = parse_technorati_tags(post.body)
-    # post.prepopulate()
     post.update_date = datetime.datetime.now()
     post.save()
-    # print "Handling Pings"
+    # FIXME: do I really want trackbacks?
     send_pings(post)
     return True
 
@@ -304,8 +271,8 @@ def blogger_getUserInfo(user, appkey):
     struct['username']=user.username
     struct['firstname']=firstname
     struct['lastname']=lastname
-    struct['nickname']= user.get_profile().fullname
-    struct['url'] = user.get_profile().url
+    struct['nickname']= user.author.fullname
+    struct['url'] = user.author.url
     struct['email'] = user.email
     struct['userid'] = str(user.id)
     return struct
@@ -349,7 +316,6 @@ def metaWeblog_getUsersBlogs(user, appkey):
   logger.debug(res)
   return res
   
-
 @public
 @authenticated()
 def mt_publishPost(user, postid):
