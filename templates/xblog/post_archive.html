@@ -12,12 +12,19 @@
         <h3><a href="{{object.get_day_archive_url}}">{{ object.pub_date|date:"F d, Y" }}</a></h3>
     {% endifchanged %}
 	<!-- links for day -->
+    
+    {% if post.post_format == "video" %}
+    <!-- video post -->
+    {%include "includes/post_video.txt" %}
+    {% else %}
+    <!-- standard post -->
     {% include "includes/post_template.txt" %}
+    {% endif %}
 	{% endfor %}
 	</section>
     
       {% block pager %}
-      <!-- post_archive.html -->
+      <!-- file: post_archive.html -->
         <nav>
           <ul class="pager">
           {% if page_obj.has_previous %}

@@ -46,6 +46,7 @@ class PostAdmin(admin.ModelAdmin):
       ('Date & Time',{'fields':("pub_date","update_date", "create_date")}),
       (None, {'fields':('text_filter','body',)}),
       ('Metadata', {'fields':(
+                    'post_format',
                     'tags',
                     'categories',
                     'blog',

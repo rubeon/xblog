@@ -19,7 +19,7 @@ from django.views.generic.dates import MonthArchiveView
 from django.views.generic.dates import DayArchiveView
 from django.views.generic.dates import DateDetailView
 from models import Post
-
+from views.blog import AuthorListView
 
 year_archive_pattern=r'^(?P<year>\d{4})/$'
 month_archive_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/$'
@@ -37,6 +37,8 @@ PAGE_LENGTH=10
 urlpatterns = patterns('',
     # remove xmlrpc view; use django_xmlprc instead
     # url(r'^xmlrpc/*','xblog.views.xmlrpc_views.call_xmlrpc', {'module':'xblog.metaWeblog'}),
+    url(r'^authors/$', AuthorListView.as_view(), 
+        name="author-list"),
     url(year_archive_pattern, YearArchiveView.as_view(model=Post, 
         date_field="pub_date", 
         paginate_by=PAGE_LENGTH), 

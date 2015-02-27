@@ -7,9 +7,10 @@ Created by Eric Williams on 2007-02-21.
 """
 from django.contrib.auth.decorators import login_required
 from django.template import RequestContext, Context, loader
+from django.views.generic.list import ListView
 # from xcomments.models import FreeComment
 from django.http import HttpResponseRedirect, HttpResponse, Http404
-from xblog.models import *
+from xblog.models import Post, Blog, Author
 
 
 from xml.etree import ElementTree
@@ -33,6 +34,13 @@ def tag_overview(request, tag):
     
     return HttpResponse(t.render(context))
 """
+
+class AuthorListView(ListView):
+    # shows the list of authors
+    
+    model = Author
+    
+    
 
 def template_preview(request, **kwargs):
     """

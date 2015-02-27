@@ -7,8 +7,14 @@
 	
 {% endblock %}	
 {% block maincontent %}
-<!-- a post -->
+|{{ object.post_format }}|
+{% if object.post_format == 'video' %}
+<!-- a video! -->
+{% include "includes/post_video.txt" %}
+{% else %}
+<!-- it's a post!  -->
 {% include "includes/post_template.txt" %}
+{% endif %}
 <!-- includes -->
 	{% for pb in object.pingback_set.all %}
 	{% ifchanged %}<h3>Pingbacks</h3>

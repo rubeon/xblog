@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 STATUS_CHOICES=(('draft','Draft'),('publish','Published'),('private','Private'))
+FORMAT_CHOICES=(('standard', 'Standard'), ('video', 'Video'), ('status','Status'),)
 # text filters
 FILTER_CHOICES=(
     ('markdown','Markdown'),
@@ -52,12 +53,14 @@ def get_markdown(data):
     #                  )
     # res = m.toString()
     # res = smartyPants(res, "1qb")
+    logger.debug("get_markdown entered")
     res = markdown2.markdown(data, extras=['footnotes','fenced-code-blocks','smartypants'])
     return res
     
 filters['markdown']=get_markdown
 
 def get_html(data):
+    logger.debug("get_html entered")
     # just return it.
     # maybe tidy it up or something...
     # data = smartyPants(data, "1qb")
@@ -66,6 +69,7 @@ def get_html(data):
 filters['html']=get_html
 
 def convert_linebreaks(data):
+    logger.debug("convert_linebreaks entered")
     data = data.replace("\n", "<br />")
     # return smartyPants(data,"1qb")
     return data
@@ -74,6 +78,7 @@ filters['convert linebreaks']=convert_linebreaks
 filters['__default__']=get_markdown
 
 def xmlify(data):
+    logger.debug("xmlify entered")
     return data
     replaced=False
     for let in data:
@@ -145,6 +150,7 @@ class Pingback(models.Model):
         return "%s (%s - %s)" % (self.title, self.source_url, self.target_url)
 
     def save(self):
+        logger.debug("Pingback.save() entered: %s" % self)
         super(self.__class__, self).save()
         mail_subject = "New Pingback from %s" % self.title.strip()
         mail_body = """        
@@ -221,6 +227,8 @@ class Post(models.Model):
     status = models.CharField(blank=True, null=True, max_length=32, choices=STATUS_CHOICES, default="Draft")
     # filter to display when "get_formatted_body" is called.
     text_filter = models.CharField(blank=True, max_length=100, choices=FILTER_CHOICES, default='__default__')
+    # format of this post
+    post_format = models.CharField(blank=True, max_length=100, choices=FORMAT_CHOICES, default='standard')
 
     def __str__(self):
         return self.title
@@ -351,6 +359,7 @@ class Post(models.Model):
 
     def get_absolute_url(self):
         logger.debug("get_absolute_url entered for %s" % self)
+        logger.debug("post_format: %s" % self.post_format)
         kwargs = {
             'slug': self.slug,
             'year': self.pub_date.year,
@@ -401,6 +410,25 @@ class Post(models.Model):
             b += """<p><a href="%s">Continue reading "%s"</p>""" % (self.get_absolute_url(), self.title)
         return b
     
+    def get_video_body(self):
+        """
+        if this is a video post, reformat it to embed the video instead of showing the URL
+        """
+        # parse a video URL... slowly at first, but then badly
+        logger.debug("get_video_body entered: %s" % self)
+        video_url = self.body.split("\n")[0]
+        if video_url.startswith("http"):
+            logger.debug("video_url: %s" % video_url)
+            if video_url.find("vimeo.com") > -1:
+                logger.debug("Got vimeo link")
+                # naive ID finder...
+                video_id = video_url.split("/")[-1]
+                video_link ="""<iframe src="//player.vimeo.com/video/%s" width="WIDTH" height="HEIGHT" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>""" % video_id
+                return video_link
+            else:
+                return "<b>Unsupported Video...</b>"
+
+        
     # newness?
     get_formatted_body.allow_tags = True
             
