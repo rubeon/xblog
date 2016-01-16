@@ -68,10 +68,11 @@ urlpatterns = patterns('',
         name='content-list'),
     url(r'export_opml/$', 'xblog.views.blog.export_opml',
         name='export-opml'),
-    url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", 
-        paginate_by=PAGE_LENGTH, 
-        queryset=Post.objects.all().filter(status="publish").select_related('author')), 
-        name='archive-index',  ),
+    # url(r'^$', ArchiveIndexView.as_view(model=Post, date_field="pub_date", 
+    #     paginate_by=PAGE_LENGTH, 
+    #     queryset=Post.objects.all().filter(status="publish").select_related('author')), 
+    #     name='archive-index',  ),
+    url(r'^$', 'xblog.views.blog.blog_overview', name='site-overview'),
 )
 
 

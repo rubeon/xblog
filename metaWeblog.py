@@ -241,7 +241,7 @@ def metaWeblog_getPost(user, postid):
 
 @public
 @authenticated(pos=2)
-def blogger_getRecentPosts(user, appkey, blogid, num_posts):
+def blogger_getRecentPosts(user, appkey, blogid, num_posts=50):
     """ returns a list of recent posts """
     logger.debug( "blogger.getRecentPosts called...")
     blog = Blog.objects.get(id=blogid)
@@ -250,12 +250,13 @@ def blogger_getRecentPosts(user, appkey, blogid, num_posts):
 
 @public
 @authenticated()
-def metaWeblog_getRecentPosts(user, blogid, num_posts):
+def metaWeblog_getRecentPosts(user, blogid, num_posts=50):
     """ returns a list of recent posts..."""
     logger.debug( "metaWeblog.getRecentPosts called...")
     logger.debug( "user %s, blogid %s, num_posts %s" % (user, blogid, num_posts))
-    blog = Blog.objects.get(id=blogid)
-    posts = blog.post_set.order_by('-pub_date')[:num_posts]
+    logger.info("WordPress compatibility, ignoring blogid")
+    # blog = Blog.objects.get(id=blogid)
+    posts = user.post_set.order_by('-pub_date')[:num_posts]
     return [post_struct(post) for post in posts]
     
 
