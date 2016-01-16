@@ -40,16 +40,17 @@ def content_list(request, **kwargs):
     This provides a list of published content...
     """
     logger.debug("content_view entered")
-    c = RequestContext(request)
+
     
     # get a post_list
     site = get_current_site(request)
 
     post_list = Post.objects.all().order_by('-pub_date')
-    logger.debug(post_list)
+    logger.debug("post_list: %s" % str(post_list))
     
-    c['post_list'] = post_list
+    c = RequestContext(request, {'post_list': post_list, })
     t = loader.get_template("xblog/content_list.html")
+
     return HttpResponse(t.render(c))
     
 
@@ -77,8 +78,7 @@ def preview_post(request, **kwargs):
     
     # put the post into a context for the template render...
     logger.debug("opening template")
-    c = RequestContext(request)
-    c['object'] = p
+    c = RequestContext(request, {'object':p})
     t = loader.get_template('includes/post_template.txt')
     
     return HttpResponse(t.render(c))
@@ -104,10 +104,13 @@ def set_publish(request, **kwargs):
 def edit_post(request, **kwargs):
     logger.debug("edit_post:")
     # PostForm = forms.form_for_model(Post)
-    p = Post.objects.select_related('categories').get(slug=kwargs['slug'])
+    p = Post.objects.get(slug=kwargs['slug'])
+
     if request.POST:
+
         logger.info("Got POST...")
         form = PostForm(request.POST, instance=p)
+
         if form.is_valid():
             logger.info("Form is valid, saving...")
             # logger.debug(form)
@@ -129,8 +132,7 @@ def edit_post(request, **kwargs):
             logger.warn("Form errors: %s" % form.errors)
             messages.error(request, form.errors)            
             # logger.debug(form)
-        c = RequestContext(request)
-        c['form']=form
+        c = RequestContext(request, {'form': form})
         t = loader.get_template('xblog/edit_post.html')
         # messages.add_message(request, messages.ERROR, form.errors)
         return HttpResponse(t.render(c))
@@ -138,9 +140,8 @@ def edit_post(request, **kwargs):
     else:
         # f = forms.form_for_instance(p,form=PostForm)()
 
-        f = PostForm(instance=p)
-        c = RequestContext(request)
-        c['form']=f
+        form = PostForm(instance=p)
+        c = RequestContext(request, {'form':form})
         t = loader.get_template('xblog/edit_post.html')
         return HttpResponse(t.render(c))
 
