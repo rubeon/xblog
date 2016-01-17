@@ -71,8 +71,8 @@ class Command(BaseCommand):
         """
         imports a remote blog via the WordPress API
         """
-        # print args
-        # print options
+        print args
+        print options
         blog_url = args[0]
         xblog_id = args[1]
         if options.get("dump"):
@@ -82,14 +82,26 @@ class Command(BaseCommand):
         username = options.get("username") or raw_input("Username: ").strip()
         password = options.get("password") or getpass.getpass()
         
-        wp_url =  self.get_xmlrpc_url(args[0]) # "https://subcriticalorg.wordpress.com/xmlrpc.php"
+        wp_url =  self.get_xmlrpc_url(args[0])
         if not wp_url:
             notify("Couldn't find API link in page %s" % blog_url)
             notify("Please re-run with '-x url_to_api_endpoint'")
-        wp_url = "https://subcriticalorg.wordpress.com/xmlrpc.php"
         # create the xmlrpc connection
+        if wp_url[:4]!='http':
+            # this is a relative URL
+            notify("Normalizing URL")
+            a = blog_url
+            b = wp_url
+            c = os.path.join(str(blog_url), str(wp_url))
+            notify(c)
+            
+            notify(os.path.join(blog_url, wp_url))
+            wp_url = os.path.join(blog_url, wp_url)
+            notify(os.path.join(blog_url, wp_url))
+            notify(wp_url)
+            
         notify("Logging in at %s" % wp_url)
-        wp = xmlrpclib.ServerProxy(wp_url, use_datetime=True)
+        wp = xmlrpclib.ServerProxy(wp_url, use_datetime=True, verbose=1)
         blogs = wp.wp.getUsersBlogs(username, password)
         
         notify("Got %d blogs" % len(blogs))

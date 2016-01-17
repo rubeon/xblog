@@ -7,22 +7,23 @@
 {% block maincontent %}
 	<!-- begin main blog overview -->
 	{% for post in latest_posts %}
-	{% ifchanged %}<h2>{{ post.pub_date|date:"F d,Y"}}</h2>{% endifchanged %}
 	<!-- a post -->
 	<div id="post-{{ post.id }}" class="item entry">
 		<div class="itemhead">
 			<h3><a href="{{ post.get_absolute_url }}" title="{{ post.title }}">{{ post.title|safe }}</a></h3>
 			<small class="metadata">
-				<span class="chronodata">Posted by <span class="vcard author">{{ post.author.get_profile.fullname }}</span> 
-				in 
-				<span class="entry-category">{{ post.categories.all|join:","}}</span> at {{ post.pub_date|date:"f A" }}<br />
+				<span class="chronodata">Posted by <span class="vcard author">{{ post.author.first_name }} {{ post.author.last_name }}</span> at {{ post.pub_date|date:"DATE_FORMAT" }}<br />
 				<a class="commentslink" href="{{ post.get_absolute_url}}#comments" title="Comments on {{ post.title }}">{{ comment_count  }} Comments</a>  
 				<a class="pingbacklink" href="{{ post.get_absolute_url }}#pingbacks" title="Pingbacks on {{ post.title }}">{{ post.get_pingback_count }} Pings</a></span>
 			</small>	
 		</div><!-- /itemhead -->
 		<div class="entrycontent">
 			{{ post.get_formatted_body|safe }}
-		</div><!-- /entrycontent -->
+		</div>
+        <div class="entryfooter">
+            <p>{% for tag in post.tags.all %}<a href="/tags/{{ tag }}/">{{ tag }}</a>{% endfor %}</p>
+        </div>
+            <!-- /entrycontent -->
 	</div><!-- /a post -->
 	{% endfor %}
 	<!-- end main blog overview -->
