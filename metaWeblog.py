@@ -15,6 +15,7 @@ import os
 import urlparse
 import sys
 from django.contrib.auth.models import User
+import django
 # from django.contrib.comments.models import FreeComment
 from django.conf import settings
 from xblog.models import Tag, Post, Blog, Author, Category, FILTER_CHOICES
@@ -28,6 +29,8 @@ from ping_modes import send_pings
 # I guess it's time to fix that upload issue...
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+# this is for getting the URL of xmlrpc endpoing
+from django.core.urlresolvers import reverse
 
 import logging
 logger = logging.getLogger(__name__)
@@ -299,24 +302,24 @@ def blogger_getUsersBlogs(user, appkey):
 @public
 @authenticated()
 def metaWeblog_getUsersBlogs(user, appkey):
-  # the original metaWeblog API didn't include this
-  # it was added in 2003, once blogger jumped ship from using
-  # the blogger API
-  # http://www.xmlrpc.com/stories/storyReader$2460
-  logger.debug( "metaWeblog.getUsersBlogs called")
-  usersblogs = Blog.objects.filter(owner=user)
-  logger.debug( "%s blogs for %s" % (usersblogs, user))
-  # return usersblogs
-  res = [
-    {
-      'blogid':str(blog.id),
-      'blogName': blog.title,
-      'url': blog.get_url()
-    } for blog in usersblogs
-    ]
-  logger.debug(res)
-  return res
-  
+    # the original metaWeblog API didn't include this
+    # it was added in 2003, once blogger jumped ship from using
+    # the blogger API
+    # http://www.xmlrpc.com/stories/storyReader$2460
+    logger.debug( "metaWeblog.getUsersBlogs called")
+    usersblogs = Blog.objects.filter(owner=user)
+    logger.debug( "%s blogs for %s" % (usersblogs, user))
+    # return usersblogs
+    res = [
+      {
+        'blogid':str(blog.id),
+        'blogName': blog.title,
+        'url': blog.get_url()
+      } for blog in usersblogs
+      ]
+    logger.debug(res)
+    return res
+    
 @public
 @authenticated()
 def mt_publishPost(user, postid):
@@ -325,7 +328,6 @@ def mt_publishPost(user, postid):
     porpoises...
     """
     return True
-    
     
 @public
 @authenticated(pos=2)
@@ -337,28 +339,8 @@ def blogger_deletePost(user, appkey, post_id, publish):
     post = Post.objects.get(pk=post_id)
     #print "DELETING:",post
     post.delete()
-    
+
     return True
-    
-# metaWeblog_getCategories removed in deference to mt.getCategoryList
-#@public
-#@authenticated()
-#def metaWeblog_getCategories(user, blogid):
-#    """ returns a list of cateogires"""
-#    print "metaWeblog_getCategories called"
-#    categories = Category.objects.all()
-#    res = []
-#    for c in categories:
-#        struct = {}
-#        struct['description']=c.title
-#        struct['htmlUrl']=''
-#        struct['rssUrl']=''
-#        res.append(struct)
-#    
-#    return res
-
-# mt_getCategoryList=metaWeblog_getCategories
-
 @public
 @authenticated()
 def mt_getCategoryList(user, blogid):
@@ -373,7 +355,6 @@ def mt_getCategoryList(user, blogid):
         res.append(struct)
     return res
     
-
 def post_struct(post):
     """ returns the meta-blah equiv of a post """
     logger.debug("post_struct called")
@@ -416,15 +397,28 @@ def format_date(d):
     return xmlrpclib.DateTime(d.isoformat())
 
 def setTags(post, struct):
-    logger.debug( "setTags called")
+    logger.debug( "setTags entered")
     tags = struct.get('tags',None)
     if tags is None:
+        logger.info("No tags set")
         post.tags = []
     else:
         # post.categories = [Category.objects.get(title__iexact=name) for name in tags]
+        logger.info("Setting tags")
+        for tag in tags:
+            logger.debug("setting tag '%s'" % tag)
+            t, created = Tag.objects.get_or_create(title=tag.lower())
+            if created:
+                logger.info("Adding new tag: %s" % t)
+            else:
+                logger.info("Found tag: %s" % t)
+            t.save()
+            post.tags.add(t)
+            post.save()
         logger.debug(tags)
-
-@public
+    logger.debug("Post Tags: %s" % str(post.tags))
+    post.save()
+    return True
 
 @public
 def mt_supportedMethods():
@@ -432,8 +426,6 @@ def mt_supportedMethods():
     logger.debug( "mt.listSupportedMethods called...")
     from blog import xmlrpc_views
     return xmlrpc_views.list_public_methods(blog.metaWeblog)
-
-@public
 
 @public
 @authenticated()
@@ -524,16 +516,36 @@ def xblog_getIdList(user,blogid):
 
 @authenticated(pos=0)
 def wp_getUsersBlogs(user):
-    logger.debug( "wp.getUsersBlogs called")
+    """
+    wp.getUsersBlogs
+    Retrieve the blogs of the users.
+
+    Parameters
+        string username
+        string password
+    Return Values
+        array
+            struct
+                boolean isAdmin # whether user is admin or not
+                string url # url of blog
+                string blogid
+                string blogName
+                string xmlrpc
+    """
+    logger.info( "wp.getUsersBlogs called")
     # print "Got user", user
     usersblogs = Blog.objects.filter(owner=user)
     logger.debug( "%s blogs for %s" % (usersblogs, user))
     # return usersblogs
     res = [
     {
+    'isAdmin': True,
+    'url': "http://127.0.0.1:8000/", # blog.get_url(),
     'blogid':str(blog.id),
     'blogName': blog.title,
-    'url': blog.get_url()
+    # 'xmlrpc': reverse("xmlrpc"),
+    'xmlrpc': "http://127.0.0.1:8000/xmlrpc/",
+
     } for blog in usersblogs
     ]
     logger.debug(res)
@@ -569,16 +581,41 @@ def wp_getOptions(user, blog_id, struct={}):
     
     res = { 
         'admin_url':admin_url,
-        'blog_id': { 'desc':'Blog ID', 'readonly':True, 'value': blog.id }, 
+        'blog_id': { 'desc':'Blog ID', 'readonly':True, 'value': str(blog.id) }, 
         'blog_public' : {'desc': 'Privacy access', 'readonly': True, 'value': '1' },
         'blog_tagline' : {'desc': 'Site Tagline', 'readonly': False, 'value': blog.description },
         'blog_title': {'desc': 'Site title', 'readonly': False, 'value': blog.title },
         'blog_url' : { 'desc': 'Blog Address (URL)', 'readonly': True, 'value': blog.get_url() }, 
-        
+        'date_format': {'desc': 'Date Format', 'readonly':False, 'value': 'F j, Y'},
+        'default_comment_status': { 'desc': 'Allow people to post comments on new articles', 'readonly': False, 'value': 'open'},
+        'default_ping_status': {'desc': 'Allow link notifications from other blogs (pingbacks and trackbacks) on new articles', 'readonly': False, 'value': 'open'},
+        'home_url': {'desc': 'Site address URL', 'readonly': True, 'value': blog.get_url()},
+        'image_default_align': {'desc': 'Image default align', 'readonly': True, 'value': ''},
+        'image_default_link_type': {'desc': 'Image default link type', 'readonly': True, 'value': 'file'},
+        'image_default_size': {'desc': 'Image default size', 'readonly': True, 'value': ''},
+        'large_size_h': {'desc': 'Large size image height', 'readonly': True, 'value': ''},
+        'large_size_w': {'desc': 'Large size image width', 'readonly': True, 'value': ''},
+        'login_url' : {'desc': 'Login Address (URL)', 'readonly': False, 'value': admin_url},
+        'medium_large_size_h': {'desc': 'Medium-Large size image height', 'readonly': True, 'value': ''},
+        'medium_large_size_w': {'desc': 'Medium-Large size image width', 'readonly': True, 'value': ''},
+        'medium_size_h': {'desc': 'Medium size image height', 'readonly': True, 'value': ''},
+        'medium_size_w': {'desc': 'Medium size image width', 'readonly': True, 'value': ''},
+        'post_thumbnail': {'desc': 'Post Thumbnail', 'readonly': True, 'value': True},
+        'software_name': {'desc': 'Software Name', 'readonly': True, 'value': 'XBlog'},
+        'software_version': {'desc': 'Software Version', 'readonly': True, 'value': django.VERSION},
+        'stylesheet': {'desc': 'Stylesheet', 'readonly': True, 'value': 'django-bootstrap3'},
+        'template': {'desc': 'Template', 'readonly': True, 'value': 'ehwio'},
+        'thumbnail_crop': {'desc': 'Crop thumbnail to exact dimensions', 'readonly': False, 'value': False},
+        'thumbnail_size_h': {'desc': 'Thumbnail Height', 'readonly': False, 'value': 150},
+        'thumbnail_size_w': {'desc': 'Thumbnail Width', 'readonly': False, 'value': 150},
+        'time_format': {'desc': 'Time Format', 'readonly': False, 'value': 'g:i a'},
+        'time_zone': {'desc': 'Time Zone', 'readonly': False, 'value': '0'},
+        'users_can_register': {'desc': 'Allow new users to sign up', 'readonly': False, 'value': True},
+        'wordpress.com': {'desc': 'This is a wordpress.com blog','readonly': True, 'value': False}, 
     }
     
     logger.debug("res: %s" % res)
-    
+    logger.info("Finished wp.getOptions")
     return res
 
 def wp_getTags(blog_id, user, password):
@@ -629,6 +666,121 @@ def wp_getTags(blog_id, user, password):
     
     logger.debug("res: %s" % res)
     return res
+
+@authenticated(pos=1)
+def wp_newPost(user, blog_id, content):
+    """
+    Parameters
+    int blog_id
+    string username
+    string password
+    struct content
+        string post_type
+        string post_status
+        string post_title
+        int post_author
+        string post_excerpt
+        string post_content
+        datetime post_date_gmt | post_date
+        string post_format
+        string post_name: Encoded URL (slug)
+        string post_password
+        string comment_status
+        string ping_status
+        int sticky
+        int post_thumbnail
+        int post_parent
+        array custom_fields
+            struct
+            string key
+            string value
+    struct terms: Taxonomy names as keys, array of term IDs as values.
+    struct terms_names: Taxonomy names as keys, array of term names as values.
+    struct enclosure
+        string url
+        int length
+        string type
+    any other fields supported by wp_insert_post    
+    
+    ## EXAMPLE FROM DeskPM 
+    
+    { 'post_format': 'text', 
+      'post_title': 'Test Post for desktop clients', 
+      'post_status': 'publish', 
+      'post_thumbnail': 0, 
+      'sticky': False, 
+      'post_content': '<p>This is a test post. </p><p>Go forth, and publish my good man...</p>', 
+      'terms_names': {'post_tag': []}, 
+      'comment_status': 'open'
+    }
+    
+    ## Full-Featured Example
+    
+    {   'post_format': 'text', 
+        'post_title': 'Full-featured Posts', 
+        'post_status': 'publish', 
+        'post_thumbnail': 0, 
+        'sticky': False, 
+        'post_content': "Fully Featured, With Pics & Stuff.\n\nMy, aren't **we** fancypants.", 
+        'terms_names': {'post_tag': ['tag']}, 
+        'comment_status': 'open'}
+    Return Values
+    string post_id
+    Errors
+    401
+    - If the user does not have the edit_posts cap for this post type.
+    - If user does not have permission to create post of the specified post_status.
+    - If post_author is different than the user's ID and the user does not have the edit_others_posts cap for this post type.
+    - If sticky is passed and user does not have permission to make the post sticky, regardless if sticky is set to 0, 1, false or true.
+    - If a taxonomy in terms or terms_names is not supported by this post type.
+    - If terms or terms_names is set but user does not have assign_terms cap.
+    - If an ambiguous term name is used in terms_names.
+    403
+    - If invalid post_type is specified.
+    - If an invalid term ID is specified in terms.
+    404
+    - If no author with that post_author ID exists.
+    - If no attachment with that post_thumbnail ID exists.
+    
+    """
+    logger.debug("wp.newPost entered")
+    logger.debug("user: %s" % str(user))
+    logger.debug("blog_id: %s" % str(blog_id))
+    logger.debug("content:\n%s" % str(content))
+    
+    blog = Blog.objects.get(pk=blog_id)
+    logger.info("blog: %s" % str(blog))    
+    pub_date = datetime.datetime.now()
+    
+    logger.info("blog: %s" % str(blog))
+    logger.info("pub_date: %s" % str(pub_date))
+    post = Post(
+        title=content['post_title'],
+        body = content['post_content'],
+        create_date = pub_date,
+        update_date = pub_date,
+        pub_date = pub_date,
+        status = content['post_status'],
+        blog = blog,
+        author =user
+    )
+    
+    post.save()
+    logger.info("Post %s saved" % post)
+    # logger.info("Setting Tags")
+    # setTags(post, struct)
+    #logger.debug("Handling Pings")
+    #logger.info("sending pings to host")
+    # send_pings(post)
+    struct = {
+        'tags': content['terms_names']['post_tag'],
+    }
+    setTags(post, struct)
+    logger.debug("newPost finished")
+    # set categories? Hmm... categories for posts seem to be legacy thinking
+    # set tags
+    return str(post.id)
+    
     
     
     

@@ -55,6 +55,7 @@ def get_markdown(data):
     # res = smartyPants(res, "1qb")
     logger.debug("get_markdown entered")
     res = markdown2.markdown(data, extras=['footnotes','fenced-code-blocks','smartypants'])
+    # logger.debug("res: %s" % res)
     return res
     
 filters['markdown']=get_markdown
