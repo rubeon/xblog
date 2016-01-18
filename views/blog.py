@@ -68,7 +68,8 @@ def blog_overview(request):
     # get last posts...
     # r = HttpResponse(mimetype="text/plain")
     logger.debug("blog_overview entered")
-    latest_posts = Post.objects.order_by('-pub_date')[:10]
+    latest_posts = Post.objects.filter(status='publish').order_by('-pub_date')[:10]
+    
     # thisblog = Blog.objects.all()[0]
     c = {}
     c['latest_posts'] = latest_posts
@@ -76,7 +77,6 @@ def blog_overview(request):
     c['pageclass'] = "blog"
     # c['thisblog'] = thisblog
     context = RequestContext(request, c)
-  
     t = loader.get_template('xblog/overview.html')
     
     return HttpResponse(t.render(context))
@@ -89,23 +89,24 @@ def site_overview(request):
     # latest special, which doesn't exist yet.
     # some content.
     # latest comments
+    logger.debug('site_overview entered')
     c = {}
     ignorelist = ['Feature','Miscellany','Uncategorized']
     frontlist = []
-    featurecat = Category.objects.get(title__iexact='Feature')
-    for cat in Category.objects.all():
-        if cat.title not in ignorelist:
-            # get latest in this category...
-            try:
-                p = Post.objects.filter(categories__in=[cat]).order_by('-pub_date')[:10]
-                if p:
-                    p.mycat = cat
-                    frontlist.append(p)
-            except Exception, e:
-                logger.warn("%s:%s" % (cat, e)) 
+    # featurecat = Category.objects.get(title__iexact='Feature')
+    # for cat in Category.objects.all():
+    #     if cat.title not in ignorelist:
+    #         # get latest in this category...
+    #         try:
+    #             p = Post.objects.filter(categories__in=[cat]).order_by('-pub_date')[:10]
+    #             if p:
+    #                 p.mycat = cat
+    #                 frontlist.append(p)
+    #         except Exception, e:
+    #             logger.warn("%s:%s" % (cat, e)) 
     
 
-    latest_posts = Post.objects.all().order_by('-pub_date')[:10]
+    latest_posts = Post.objects.filter(status='publish').order_by('-pub_date')[:10]
     # latest_comments = FreeComment.objects.all().order_by('-submit_date')[:10]
     
     c['latest_feature'] = featurecat.post_set.order_by('-pub_date')
@@ -124,6 +125,7 @@ def export_opml(request):
     this was lifted from the "django_feedreader" application, which you 
     should definitely check out: https://github.com/ahernp/django-feedreader
     """
+    logger.debug('export_opml entered')
     root = ElementTree.Element('opml')
     root.set('version', '2.0')
     head = ElementTree.SubElement(root, 'head')

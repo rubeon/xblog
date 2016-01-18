@@ -11,6 +11,8 @@ def calculate_readability(post):
     """
     full_text = post.get_full_body()
     text = html2text(full_text)
+    logger.debug("FULL_TEXT:\n" + full_text)
+    logger.debug("TEXT:\n" + text)
     
     res = {}
     try:
@@ -19,8 +21,11 @@ def calculate_readability(post):
         res['coleman_liau'] = textstat.textstat.coleman_liau_index(text)
         res['consensus'] = textstat.textstat.readability_consensus(text)
     except Exception, e:
+        import traceback, sys
+        exc_type, exc_value, exc_traceback = sys.exc_info()
         logger.warn(e)
         logger.debug(text)
+        traceback.print_tb(exc_traceback)
         print e
         res = {}
     return res

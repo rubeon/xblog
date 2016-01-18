@@ -18,7 +18,7 @@ from django.contrib.auth.models import User
 import django
 # from django.contrib.comments.models import FreeComment
 from django.conf import settings
-from xblog.models import Tag, Post, Blog, Author, Category, FILTER_CHOICES
+from xblog.models import Tag, Post, Blog, Author, FILTER_CHOICES
 from views.xmlrpc_views import public
 import BeautifulSoup
 from ping_modes import send_pings
@@ -34,6 +34,11 @@ from django.core.urlresolvers import reverse
 
 import logging
 logger = logging.getLogger(__name__)
+
+# Add these to your existing RPC methods in settings.py
+# i.e.
+
+
 
 def authenticated(pos=1):
     # tells the method that the visitor is authenticated
@@ -68,8 +73,7 @@ def full_url(url):
 @public
 @authenticated()
 def metaWeblog_getCategories(user, blogid, struct={}):
-    """ 
-    takes the blogid, and returns a list of categories
+    """ takes the blogid, and returns a list of categories
     struct:
     string categoryId
     string parentId
@@ -84,21 +88,21 @@ def metaWeblog_getCategories(user, blogid, struct={}):
     logger.debug("metaWeblog_getCategories called")
     categories = Category.objects.all()
     res=[]
-    for c in categories:
-        struct={}
-        struct['categoryId'] = str(c.id)
-        # struct['parentId'] = str(0)
-        struct['categoryName']= c.title
-        struct['parentId'] = ''
-        struct['title'] = c.title
-        # if c.description == '':
-        #     struct['categoryDescription'] = c.title
-        # else:
-        #     struct['categoryDescription'] = c.description
-        # struct['description'] = struct['categoryDescription']
-        struct['htmlUrl'] = "http://dev.ehw.io"
-        
-        res.append(struct)
+    logger.warn("Categories no longer supported")
+    # for c in categories:
+    #     struct={}
+    #     struct['categoryId'] = str(c.id)
+    #     # struct['parentId'] = str(0)
+    #     struct['categoryName']= c.title
+    #     struct['parentId'] = ''
+    #     struct['title'] = c.title
+    #     # if c.description == '':
+    #     #     struct['categoryDescription'] = c.title
+    #     # else:
+    #     #     struct['categoryDescription'] = c.description
+    #     # struct['description'] = struct['categoryDescription']
+    #     struct['htmlUrl'] = "http://dev.ehw.io"
+    #     res.append(struct)
     logger.debug(res)
     return res
 
@@ -152,16 +156,17 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
     # need to save beffore setting many-to-many fields, silly django
     post.save()
     categories = struct.get("categories", [])
-    logger.debug("Setting categories: %s" % categories)
-    clist = []
-    for category in categories:
-        try:
-            c = Category.objects.filter(blog=blog, title=category)[0]
-            logger.debug("Got %s" % c)
-            clist.append(c)
-        except Exception, e:
-            logger.warn(str(e))
-    post.categories=clist
+    # logger.debug("Setting categories: %s" % categories)
+    logger.warn("Categories no longer supported")
+    # clist = []
+    # for category in categories:
+    #     try:
+    #         c = Category.objects.filter(blog=blog, title=category)[0]
+    #         logger.debug("Got %s" % c)
+    #         clist.append(c)
+    #     except Exception, e:
+    #         logger.warn(str(e))
+    # post.categories=clist
     post.save()
     logger.info("Post %s saved" % post)
     logger.info("Setting Tags")
@@ -284,6 +289,20 @@ def blogger_getUserInfo(user, appkey):
 @public
 @authenticated()
 def blogger_getUsersBlogs(user, appkey):
+    """
+    Parameters
+    string appkey: Not applicable for WordPress, can be any value and will be ignored.
+    string username
+    string password
+    Return Values
+    array
+        struct
+            string blogid
+            string url: Homepage URL for this blog.
+            string blogName
+            bool isAdmin
+            string xmlrpc: URL endpoint to use for XML-RPC requests on this blog.
+    """
     logger.debug( "blogger.getUsersBlogs called")
     # print "Got user", user
     usersblogs = Blog.objects.filter(owner=user)
@@ -346,13 +365,14 @@ def blogger_deletePost(user, appkey, post_id, publish):
 def mt_getCategoryList(user, blogid):
     """ takes the blogid, and returns a list of categories"""
     logger.debug( "mt_getCategoryList called")
-    categories = Category.objects.all()
+    # categories = Category.objects.all()
+    logger.warn("Categories no longer supported")
     res=[]
-    for c in categories:
-        struct={}
-        struct['categoryId']= str(c.id)
-        struct['categoryName']= c.title
-        res.append(struct)
+    # for c in categories:
+    #     struct={}
+    #     struct['categoryId']= str(c.id)
+    #     struct['categoryName']= c.title
+    #     res.append(struct)
     return res
     
 def post_struct(post):
@@ -360,7 +380,8 @@ def post_struct(post):
     logger.debug("post_struct called")
     # link = full_url(post.get_absolute_url())
     link = post.get_absolute_url()
-    categories = post.categories.all()
+    # categories = post.categories.all()
+    categories = []
     # check to see if there's a more tag...
     if post.body.find('<!--more-->') > -1:
       description, mt_text_more = post.body.split('<!--more-->')
@@ -380,7 +401,7 @@ def post_struct(post):
         'description':description,
         'mt_text_more':mt_text_more,
         'mt_convert_breaks':post.text_filter,
-        'categories': [c.title for c in categories],
+        'categories': categories,
         'userid': post.author.id,
         'mt_allow_comments':str(mt_allow_comments)
     }
@@ -434,32 +455,36 @@ def mt_getPostCategories(user, postid):
     returns a list of categories for postid *postid*
     """
     logger.debug( "mt_getPostCategories called...")
-    try:
-        p = Post.objects.get(pk=postid)
-        # print "Processing", p.categories.all()
-        counter = 0
-        res = []
-
-        
-        for c in p.categories.all():
-            # print "Got post category:", c
-            primary = False
-            if p.primary_category_name == c:
-                # print "%s is the primary category" % c
-                primary=True
-            res.append(
-                dict(categoryName=c.title, categoryId=str(c.id), isPrimary=primary)
-            )
-    except:
-        import traceback
-        traceback.print_exc(sys.stderr)
-        res = None
-    
+    logger.warn("Categories no longer supported")
+    res = []
+    # try:
+    #     p = Post.objects.get(pk=postid)
+    #     # print "Processing", p.categories.all()
+    #     counter = 0
+    #     res = []
+    # 
+    #     
+    #     for c in p.categories.all():
+    #         # print "Got post category:", c
+    #         primary = False
+    #         if p.primary_category_name == c:
+    #             # print "%s is the primary category" % c
+    #             primary=True
+    #         res.append(
+    #             dict(categoryName=c.title, categoryId=str(c.id), isPrimary=primary)
+    #         )
+    # except:
+    #     import traceback
+    #     traceback.print_exc(sys.stderr)
+    #     res = None
+    # 
     return res
 
 @public
 def mt_supportedTextFilters():
-    """ tells ecto to use markdown or whatever..."""
+    """ 
+    
+    """
     logger.debug( "Called mt_supportedTextFilters")
     res = []
     for key, label in FILTER_CHOICES:
@@ -478,19 +503,20 @@ def mt_setPostCategories(user, postid, cats):
     """
     logger.debug( "mt_setPostCategories called...")
     logger.info("Submitted with %s" % cats)
-    post = Post.objects.get(pk=postid)
-    logger.debug("Old cats: %s" % post.categories.all())
-    post.categories.clear()
-    catlist = []
-    for cat in cats:
-        category = Category.objects.get(pk=cat['categoryId'])
-        # print "Got", category
-        if cat.has_key('isPrimary') and cat['isPrimary']:
-            logger.debug("Got primary category '%s'" % cat)
-            post.primary_category_name = category
-        post.categories.add(category)
-    logger.debug("New cats: %s" % post.categories.all())
-    post.save()
+    logger.warn("Categories no longer supported")
+    # post = Post.objects.get(pk=postid)
+    # logger.debug("Old cats: %s" % post.categories.all())
+    # post.categories.clear()
+    # catlist = []
+    # for cat in cats:
+    #     category = Category.objects.get(pk=cat['categoryId'])
+    #     # print "Got", category
+    #     if cat.has_key('isPrimary') and cat['isPrimary']:
+    #         logger.debug("Got primary category '%s'" % cat)
+    #         post.primary_category_name = category
+    #     post.categories.add(category)
+    # logger.debug("New cats: %s" % post.categories.all())
+    # post.save()
     logger.debug(" mt_setPostCategories Done.")
     return True
 
@@ -622,18 +648,18 @@ def wp_getTags(blog_id, user, password):
     """
     Get an array of users for the blog. [sic?]
     Parameters
-    int blog_id
-    string username
-    string password
+        int blog_id
+        string username
+        string password
     Return Values
-    array
-    struct
-    int tag_id
-    string name
-    int count
-    string slug
-    string html_url
-    string rss_url
+        array
+            struct
+                int tag_id
+                string name
+                int count
+                string slug
+                string html_url
+                string rss_url
     
     [{
 	  'count': '1',
@@ -643,7 +669,6 @@ def wp_getTags(blog_id, user, password):
 	  'slug': 'apocalypse',
 	  'tag_id': '135830'},
     }]
-    
     """
     logger.debug("wp.getTags entered")
     ##FIXME check the user password...
@@ -780,7 +805,4 @@ def wp_newPost(user, blog_id, content):
     # set categories? Hmm... categories for posts seem to be legacy thinking
     # set tags
     return str(post.id)
-    
-    
-    
     

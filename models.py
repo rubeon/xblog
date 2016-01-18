@@ -186,27 +186,12 @@ class Author(models.Model):
     about = models.TextField(blank=True)
     avatar_height = models.IntegerField(blank=True, null=True)
     avatar_width = models.IntegerField(blank=True, null=True)
-    # moved to admin.py
-    #class Admin:
-    #    # list_display = ('',)
-    #    # search_fields = ('',)
-    #    pass
-
+    
     def get_avatar_url(self):
         logger.debug("%s: %s" % (self, "Getting avatar url"))
         return self.avatar.url
     def __str__(self):
         return "%s (%s)" % (self.fullname,self.user.username)
-
-class Category(models.Model):
-    """Categories for Blog entries"""
-    title = models.CharField(blank=True, max_length=100)
-    description = models.CharField(blank=True, max_length=100)
-    blog = models.ForeignKey("Blog")
-
-    def __str__(self):
-        return self.title
-
 
 class Post(models.Model):
     """A Blog Entry, natch"""
@@ -222,11 +207,12 @@ class Post(models.Model):
     guid = models.CharField(blank=True, max_length=255)
     body = models.TextField(blank=True)
     summary = models.TextField(blank=True)
-    categories = models.ManyToManyField(Category)
-    primary_category_name = models.ForeignKey(Category, related_name='primary_category_set', blank=True, null=True)
+    # categories = models.ManyToManyField(Category)
+    # primary_category_name = models.ForeignKey(Category, related_name='primary_category_set', blank=True, null=True)
     tags = models.ManyToManyField(Tag, blank=True)
     blog = models.ForeignKey('Blog')
-    author = models.ForeignKey(User)
+    # author = models.ForeignKey(User)
+    author = models.ForeignKey('Author')
     status = models.CharField(blank=True, null=True, max_length=32, choices=STATUS_CHOICES, default="Draft")
     # filter to display when "get_formatted_body" is called.
     text_filter = models.CharField(blank=True, max_length=100, choices=FILTER_CHOICES, default='__default__')
@@ -481,7 +467,8 @@ class PostForm(ModelForm):
         model = Post
         # fields = ["pub_date", "title",  "enable_comments", "body", "text_filter", "blog", "author"]
         # exclude = ['update_date', 'create_date', 'slug', ]
-        fields = ['title', 'body',  'categories', 'text_filter', 'blog', 'author', 'status', 'guid']
+        readonly_fields = ('create_date',)
+        fields = ['title', 'body', 'author',  'status', 'tags', 'text_filter', 'blog',  'guid']
 
         
 #class PodcastChannel(models.Model):

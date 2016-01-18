@@ -1,6 +1,9 @@
 from django.contrib import admin
-from xblog.models import LinkCategory, Link, Pingback, Tag, Author, Category, Post, Blog
+from django.contrib.auth.models import User
+
+from xblog.models import LinkCategory, Link, Pingback, Tag, Author, Post, Blog
 from xblog.models import STATUS_CHOICES, FILTER_CHOICES
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 class LinkCategoryAdmin(admin.ModelAdmin):
     list_display = ('title',)
@@ -23,21 +26,29 @@ class TagAdmin(admin.ModelAdmin):
     search_fields = ('title',)
 admin.site.register(Tag, TagAdmin)
 
-class AuthorAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(Author, AuthorAdmin)
+class AuthorInline(admin.StackedInline):
+    model = Author
+    can_delete = False
 
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('title','blog')
-    search_fields = ('title',)
-admin.site.register(Category, CategoryAdmin)
+class AuthorAdmin(BaseUserAdmin):
+    inlines = (AuthorInline,)
+  
+  
+admin.site.unregister(User)  
+admin.site.register(User, AuthorAdmin)
+# admin.site.register(Author, AuthorAdmin)
 
+# class CategoryAdmin(admin.ModelAdmin):
+#     list_display = ('title','blog')
+#     search_fields = ('title',)
+# admin.site.register(Category, CategoryAdmin)
+# 
 class PostAdmin(admin.ModelAdmin):
     # list_display = ('title',)
     list_display = ('title','pub_date') #,'author','status')
     search_fields = ('title','body','slug')
     date_hierarchy = 'pub_date'
-    list_filter = ['author','pub_date', 'status', 'tags', 'categories']
+    list_filter = ['author','pub_date', 'status', 'tags', ]
     
     
     
@@ -48,14 +59,10 @@ class PostAdmin(admin.ModelAdmin):
       ('Metadata', {'fields':(
                     'post_format',
                     'tags',
-                    'categories',
                     'blog',
                     'author',
                     'status',
                     'enable_comments')}),
-      ('Extras', {'fields':(
-                    'summary',
-                    'primary_category_name', ), 'classes':'collapse'}),
     )
     
     prepopulated_fields = {"slug": ("title",)}

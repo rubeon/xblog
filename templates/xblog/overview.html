@@ -12,7 +12,8 @@
 		<div class="itemhead">
 			<h3><a href="{{ post.get_absolute_url }}" title="{{ post.title }}">{{ post.title|safe }}</a></h3>
 			<small class="metadata">
-				<span class="chronodata">Posted by <span class="vcard author">{{ post.author.first_name }} {{ post.author.last_name }}</span> at {{ post.pub_date|date:"DATE_FORMAT" }}<br />
+				<span class="chronodata">Posted by <span class="vcard author">{{ post.author.fullname }}</span> at {{ post.pub_date|date:"DATE_FORMAT" }}<br />
+                <img src={{ post.author.avatar}}>
 				<a class="commentslink" href="{{ post.get_absolute_url}}#comments" title="Comments on {{ post.title }}">{{ comment_count  }} Comments</a>  
 				<a class="pingbacklink" href="{{ post.get_absolute_url }}#pingbacks" title="Pingbacks on {{ post.title }}">{{ post.get_pingback_count }} Pings</a></span>
 			</small>	

@@ -117,7 +117,7 @@ def edit_post(request, **kwargs):
             model_instance = form.save(commit=False)
             model_instance.update_date = timezone.now()
             model_instance.save()
-            logger.debug("XX: %s" % p.categories.all())
+
             # messages.add_message(request, messages.INFO, "Saved '%s'" % model_instance.title)
             messages.info(request, "Saved '%s'" % model_instance.title)
             # return HttpResponseRedirect(model_instance.get_absolute_url())
@@ -149,10 +149,12 @@ def stats(request, **kwargs) :
     """
     renders the post_stats.txt table
     """
-    p = Post.objects.select_related('categories').get(slug=kwargs['slug'])
+    p = Post.objects.get(slug=kwargs['slug'])
     t = loader.get_template('includes/post_stats.txt')
-    c = RequestContext(request)
+    c = {}
     c['readability'] = p.get_readability()
+    c = RequestContext(request, c)
+    
     return HttpResponse(t.render(c))
 
 # @login_required
@@ -170,7 +172,7 @@ def add_post(request):
             model_instance.save()
             # messages.add_message(request, messages.INFO, "Added '%s'" % model_instance.title)
             logging.debug(form)
-            logging.debug(model_instance.categories)
+            
             messages.info(request, "Added '%s'" % model_instance.title)
             form.save_m2m()
             return redirect(model_instance.get_absolute_url())
