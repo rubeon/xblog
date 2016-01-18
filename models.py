@@ -5,6 +5,8 @@ from django.core.mail import mail_managers, send_mail
 # from django.utils.text import truncate_html_words
 # replaced by the following
 from django.utils.text import Truncator
+# for setting default date
+import django.utils.timezone
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.sites.managers import CurrentSiteManager
@@ -141,8 +143,8 @@ class Pingback(models.Model):
     
     source_url = models.URLField(blank=True)
     target_url = models.URLField(blank=True)
-    pub_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
-    mod_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
+    pub_date = models.DateTimeField(blank=True, default=django.utils.timezone.now)
+    mod_date = models.DateTimeField(blank=True, default=django.utils.timezone.now)
     
     def __str__(self):
         return "Reply %s -> %s" % (self.source_url,self.target_url)
@@ -209,7 +211,7 @@ class Category(models.Model):
 class Post(models.Model):
     """A Blog Entry, natch"""
     # metadata
-    pub_date = models.DateTimeField(blank=True, default=datetime.datetime.now())
+    pub_date = models.DateTimeField(blank=True, default=django.utils.timezone.now)
     update_date = models.DateTimeField(blank=True, auto_now=True) 
     create_date = models.DateTimeField(blank=True, auto_now_add=True)
     enable_comments = models.BooleanField(default=True)
@@ -222,7 +224,7 @@ class Post(models.Model):
     summary = models.TextField(blank=True)
     categories = models.ManyToManyField(Category)
     primary_category_name = models.ForeignKey(Category, related_name='primary_category_set', blank=True, null=True)
-    tags = models.ManyToManyField(Tag, blank=True, null=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     blog = models.ForeignKey('Blog')
     author = models.ForeignKey(User)
     status = models.CharField(blank=True, null=True, max_length=32, choices=STATUS_CHOICES, default="Draft")

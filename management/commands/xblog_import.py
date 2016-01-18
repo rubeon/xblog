@@ -142,7 +142,7 @@ class Command(BaseCommand):
                 
         for blog in active_blogs:
             # create a dictionary of categories
-            categories = categories + wp.wp.getCategories(blog['blogid'], username, password)
+            categories = categories + wp.metaWeblog.getCategories(blog['blogid'], username, password)
             # create a list of posts
             notify("%d categories" % len(categories))
             # walk through the posts
