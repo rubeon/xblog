@@ -12,6 +12,17 @@ from django.contrib.sites.models import Site
 from django.contrib.sites.managers import CurrentSiteManager
 from django.forms import ModelForm
 
+from django.db.models.signals import post_save
+
+def create_profile(sender, **kwargs):
+    user = kwargs["instance"]
+    if kwargs["created"]:
+        up = Author(user=user)
+        up.save()
+
+post_save.connect(create_profile, sender=User)
+
+
 from external import fuzzyclock
 from external import text_stats
 
