@@ -13,9 +13,9 @@
                 <p><a href="{{ object.get_absolute_url }}edit/">(edit)</a></p>
             </container>
             {% endif %}
-            
+            <p><img src="{{object.author.avatar.url }}"></p>
 
-            <p class="blog-post-meta">Posted by {{ object.author.first_name }} {{ object.author.last_name }} at {{ object.pub_date|date:"P"}} 
+            <p class="blog-post-meta">Posted by {{ object.author.fullname }} at {{ object.pub_date|date:"P"}} 
                 on {{ object.pub_date|date:"N dS, Y"}}
             </p>
 	        {{ object.get_full_body|safe }}
