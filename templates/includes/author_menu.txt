@@ -33,3 +33,4 @@ Author Name
                 <a href="{% url "social:begin" backend='twitter' %}" ><i class="fa fa-twitter"></i> Sign in with Twitter</a>
             </li>
 {% endif %}
+ 

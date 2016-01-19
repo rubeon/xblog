@@ -150,7 +150,7 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
         status = publish and 'publish' or 'draft',
         blog = blog,
         author =user
-    )
+    ) 
     post.prepopulate()
     logger.debug( "Saving")
     # need to save beffore setting many-to-many fields, silly django
