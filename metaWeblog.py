@@ -138,7 +138,14 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
     logger.debug("struct: %s" % struct)
     logger.debug("publish: %s" % publish)
     body = struct['description']
-    blog = Blog.objects.get(pk=blogid)
+    try:
+        logger.info("Checking for passed blog parameter")
+        blog = Blog.objects.get(pk=blogid)
+    except ValueError:
+        # probably expecting wp behavior
+        logger.info("Specified blog not found, using default")
+        blog = Blog.objects.filter(owner=user)[0]
+
     pub_date = datetime.datetime.now()
     
     post = Post(
@@ -149,7 +156,7 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
         pub_date = pub_date,
         status = publish and 'publish' or 'draft',
         blog = blog,
-        author =user
+        author =user.author
     ) 
     post.prepopulate()
     logger.debug( "Saving")
@@ -170,7 +177,7 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
     post.save()
     logger.info("Post %s saved" % post)
     logger.info("Setting Tags")
-    setTags(post, struct)
+    setTags(post, struct, tags="mt_keywords")
     logger.debug("Handling Pings")
     logger.info("sending pings to host")
     send_pings(post)
@@ -212,7 +219,7 @@ def metaWeblog_editPost(user, postid, struct, publish):
     else:
       post.status = "draft"
       
-    setTags(post, struct)
+    setTags(post, struct, key="mt_keywords")
     post.update_date = datetime.datetime.now()
     post.save()
     # FIXME: do I really want trackbacks?
@@ -264,7 +271,7 @@ def metaWeblog_getRecentPosts(user, blogid, num_posts=50):
     logger.debug( "user %s, blogid %s, num_posts %s" % (user, blogid, num_posts))
     logger.info("WordPress compatibility, ignoring blogid")
     # blog = Blog.objects.get(id=blogid)
-    posts = user.post_set.order_by('-pub_date')[:num_posts]
+    posts = user.author.post_set.order_by('-pub_date')[:num_posts]
     return [post_struct(post) for post in posts]
     
 
@@ -417,9 +424,9 @@ def format_date(d):
     # return xmlrpclib.DateTime(d.isoformat())
     return xmlrpclib.DateTime(d.isoformat())
 
-def setTags(post, struct):
+def setTags(post, struct, key="tags"):
     logger.debug( "setTags entered")
-    tags = struct.get('tags',None)
+    tags = struct.get(key, None)
     if tags is None:
         logger.info("No tags set")
         post.tags = []
@@ -442,11 +449,15 @@ def setTags(post, struct):
     return True
 
 @public
-def mt_supportedMethods():
+def mt_supportedMethods(*args):
     """ returns the xmlrpc-server's list of supported methods"""
     logger.debug( "mt.listSupportedMethods called...")
-    from blog import xmlrpc_views
-    return xmlrpc_views.list_public_methods(blog.metaWeblog)
+    # from blog import xmlrpc_views
+    # return xmlrpc_views.list_public_methods(blog.metaWeblog)
+    res = []
+    for method in settings.XMLRPC_METHODS:
+        res.append(method[1])
+    return res
 
 @public
 @authenticated()
