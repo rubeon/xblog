@@ -1,31 +1,37 @@
 {% extends "xblog/blog_base.html" %}
 {% load markdown_deux_tags %}
+{% load bootstrap3 %}
 {% block extratitle %}{{pagetitle}}{% endblock %}
 {% block navigation %}
-&nbsp;&rsaquo;<a href="/blog/">Blog </a>
+<li>Blog</li>
 {% endblock %}
 {% block maincontent %}
 	<!-- begin main blog overview -->
-	{% for post in latest_posts %}
-	<!-- a post -->
-	<div id="post-{{ post.id }}" class="item entry">
-		<div class="itemhead">
-			<h3><a href="{{ post.get_absolute_url }}" title="{{ post.title }}">{{ post.title|safe }}</a></h3>
-			<small class="metadata">
-				<span class="chronodata">Posted by <span class="vcard author">{{ post.author.fullname }}</span> at {{ post.pub_date|date:"DATE_FORMAT" }}<br />
-                <img src={{ post.author.avatar.url }}>
-				<a class="commentslink" href="{{ post.get_absolute_url}}#comments" title="Comments on {{ post.title }}">{{ comment_count  }} Comments</a>  
-				<a class="pingbacklink" href="{{ post.get_absolute_url }}#pingbacks" title="Pingbacks on {{ post.title }}">{{ post.get_pingback_count }} Pings</a></span>
-			</small>	
-		</div><!-- /itemhead -->
-		<div class="entrycontent">
-			{{ post.get_formatted_body|safe }}
-		</div>
-        <div class="entryfooter">
-            <p>{% for tag in post.tags.all %}<a href="/tags/{{ tag }}/">{{ tag }}</a>{% endfor %}</p>
-        </div>
-            <!-- /entrycontent -->
-	</div><!-- /a post -->
+    <h1>Hi o/</h1>
+	{% for object in object_list %}
+    {% include "includes/post_template.txt" %}
 	{% endfor %}
 	<!-- end main blog overview -->
+    {% block pager %}
+    <!-- file: post_archive.html -->
+      <nav>
+        <ul class="pager">
+        {% if page_obj.has_previous %}
+          <li>
+              <a href="?page={{ page_obj.previous_page_number }}">
+              {% bootstrap_icon "circle-arrow-left" %} Previous
+             </a>
+          </li>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <li>
+              <a href="?page={{ page_obj.next_page_number }}">
+                  Next {% bootstrap_icon "circle-arrow-right" %}
+              </a>
+          </li>
+        {% endif %}
+        </ul>
+      </nav>
+    {% endblock %}
+    
 {% endblock %}

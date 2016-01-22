@@ -12,18 +12,20 @@ Created by Eric Williams on 2007-02-27.
 # are now available through django.conf.urls .
 
 from django.conf.urls import include, patterns, url
+from django.contrib.sites.models import Site
 from django.contrib.sitemaps import GenericSitemap
-from django.views.generic.dates import ArchiveIndexView
-from django.views.generic.dates import YearArchiveView
-from django.views.generic.dates import MonthArchiveView
-from django.views.generic.dates import DayArchiveView
-from django.views.generic.dates import DateDetailView
-from models import Post
-from views.blog import AuthorListView
 
-year_archive_pattern=r'^(?P<year>\d{4})/$'
+from .models import Post
+from .views.blog import AuthorListView
+from .views.blog import PostYearArchiveView
+from .views.blog import PostMonthArchiveView
+from .views.blog import PostDayArchiveView
+from .views.blog import PostArchiveIndexView
+from .views.blog import PostDateDetailView
+
+year_archive_pattern =r'^(?P<year>[0-9]{4})/$'
 month_archive_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/$'
-day_archive_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/$'
+day_archive_pattern  =r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/$'
 # date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{2})/(?P<slug>[-\w]+)/$'
 date_detail_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/$'
 post_edit_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/edit/$'
@@ -32,29 +34,17 @@ post_preview_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P
 post_set_publish_pattern=r'^(?P<year>\d{4})/(?P<month>[a-z]{3})/(?P<day>\w{1,2})/(?P<slug>[-\w]+)/set_publish/$'
 template_preview_pattern=r'^template_preview/(?P<template_file>[-/\w]+)$'
 
-PAGE_LENGTH=10
-
+PAGE_LENGTH=30
 
 urlpatterns = patterns('',
     # remove xmlrpc view; use django_xmlprc instead
     # url(r'^xmlrpc/*','xblog.views.xmlrpc_views.call_xmlrpc', {'module':'xblog.metaWeblog'}),
     url(r'^authors/$', AuthorListView.as_view(), 
         name="author-list"),
-    url(year_archive_pattern, YearArchiveView.as_view(model=Post, 
-        date_field="pub_date", 
-        paginate_by=PAGE_LENGTH), 
-        name="year-archive"),
-    url(month_archive_pattern, MonthArchiveView.as_view(model=Post, 
-        date_field="pub_date", 
-        paginate_by=PAGE_LENGTH), 
-        name="month-archive"),
-    url(day_archive_pattern, DayArchiveView.as_view(model=Post, 
-        date_field="pub_date", 
-        paginate_by=PAGE_LENGTH), 
-        name="day-archive"),
-    url(date_detail_pattern, DateDetailView.as_view(model=Post, 
-        date_field="pub_date",), 
-        name='post-detail'),
+    url(year_archive_pattern, PostYearArchiveView.as_view(paginate_by=PAGE_LENGTH), name="year-archive"),
+    url(month_archive_pattern, PostMonthArchiveView.as_view(paginate_by=5), name="month-archive"),
+    url(day_archive_pattern, PostDayArchiveView.as_view(paginate_by=PAGE_LENGTH), name="day-archive"),
+    url(date_detail_pattern, PostDateDetailView.as_view(),name='post-detail'),
     url(post_edit_pattern, 'xblog.views.edit.edit_post',
         name="post-edit" ),
     url(post_stats_pattern, 'xblog.views.edit.stats',
@@ -75,7 +65,11 @@ urlpatterns = patterns('',
     #     paginate_by=PAGE_LENGTH, 
     #     queryset=Post.objects.all().filter(status="publish").select_related('author')), 
     #     name='archive-index',  ),
-    url(r'^$', 'xblog.views.blog.blog_overview', name='site-overview'),
+    url(r'^$', PostArchiveIndexView.as_view(model=Post,
+        date_field="pub_date",
+        paginate_by=PAGE_LENGTH,
+        queryset=Post.objects.filter(status="publish")),
+        name='site-overview'),
 )
 
 

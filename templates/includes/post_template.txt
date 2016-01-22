@@ -2,23 +2,26 @@
 <article>
     <div class="blog-post">
 		<div class="panel">
-            <h3 class="blog-post-title">
-                <a href="{{ object.get_absolute_url }}">{{ object.title }}</a>                
-            </h3>
-{% if perms.xblog.change_post %}
-<container><a title="Show Statistics" href="javascript:void(0)" onclick="loadPage('{{ object.get_absolute_url }}stats/', '#stats_container-{{ object.id }}');">Show statistics</a><div id="stats_container-{{ object.id }}"></div>
-            {% comment %}
-                {% include "includes/post_stats.txt" %}
-            {% endcomment %}
-                <p><a href="{{ object.get_absolute_url }}edit/">(edit)</a></p>
-            </container>
-            {% endif %}
-            <p><img src="{{object.author.avatar.url }}"></p>
-
+            <h3 class="blog-post-title"><a href="{{ object.get_absolute_url }}">{{ object.title }}</a></h3>
             <p class="blog-post-meta">Posted by {{ object.author.fullname }} at {{ object.pub_date|date:"P"}} 
                 on {{ object.pub_date|date:"N dS, Y"}}
             </p>
+
+            {% if object.author.avatar %}
+            <p><img src="{{object.author.avatar.url }}"></p>
+            {% endif %}
 	        {{ object.get_full_body|safe }}
+            {% if perms.xblog.change_post %}
+
+            <container>
+                <a title="Show Statistics" href="javascript:void(0)" onclick="loadPage('{{ object.get_absolute_url }}stats/', '#stats_container-{{ object.id }}');">Show statistics</a>
+                <div id="stats_container-{{ object.id }}"></div>
+                {% comment %}
+                    {% include "includes/post_stats.txt" %}
+                {% endcomment %}
+                <p><a href="{{ object.get_absolute_url }}edit/">(edit)</a></p>
+            </container>
+            {% endif %}
         </div>        
 	</div>
 </article>

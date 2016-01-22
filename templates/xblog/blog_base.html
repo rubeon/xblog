@@ -4,53 +4,31 @@
 {% load bootstrap3 %}
 
 {% block extrahead %}
-<meta name="description" content="{{blog.description}}" />
-<link rel="alternate" href="http://feeds.feedburner.com/youbitch/qGWn" type="application/rss+xml" title="RSS 2.0" />
-<link rel="EditURI" href="{{ request.build_absolute_uri }}xmlrpc/" type="application/rsd+xml" title="RSD" />
-<link rel="archives" href="{{  site_url }}blog/archive/" title="Archives" charset="utf-8" />
-<link rel="pingback" href="{{ site_url }}xmlrpc/" />
+<link rel="alternate" href="{{ site.url }}" type="application/rss+xml" title="RSS 2.0" />
+<link rel="EditURI" href="{{ site.get_current_site.domain }}xmlrpc/" type="application/rsd+xml" title="RSD" />
+<link rel="archives" href="{{  request.build_absolute_uri }}archive/" title="Archives" charset="utf-8" />
+<link rel="pingback" href="{{ site.url }}xmlrpc/" />
 <link rel="stylesheet" type="text/css" href="{% static "pygments-css/zenburn.css" %}">
 <link rel="stylesheet" type="text/css" href="{% static "xblog-css/xblog.css" %}">
 <script src="{% static "js/rango-ajax.js" %}"></script>
-
-<style>
-/*    code { 
-        background-color: #001144; 
-         display: block; 
-        margin: 10pt;
-        padding: 10pt; 
-        border: 2px solid;
-        border-radius: 12px;
-        
-    
-    }
-*/
-</style>
+{% block blogheaders %}<meta name="description" content="{{ site.name }}" />{% endblock %}
 {% endblock %}
 {% block subpagetitle %}blog{% endblock %}
 {% block pagestyle %}blog{% endblock %}
-{% block leftnav %}{% endblock %}
+{% block leftnav %}<!-- leftnav -->{% endblock %}
+{% block navigation %}
+    <li>Blog</li>
+{% endblock %}
+{% block yearnav %}
+...
+{% endblock %}
+
 <!-- main content -->
 {% block maincontent %}
 
 Main content goes here.
 
 {% endblock %}
-      {% block pager %}
-      <!-- blog_base.html:2 -->
-      
-        <nav>
-          <ul class="pager">
-          {% if page_obj.has_previous %}
-            <li><a href="?page={{ page_obj.previous_page_number }}">{% bootstrap_icon "circle-arrow-left" %} Previous</a></li>
-          {% endif %}
-          {% if page_obj.has_next %}
-            <li><a href="?page={{ page_obj.next_page_number }}">Next {% bootstrap_icon "circle-arrow-right" %}</a></li>
-          {% endif %}
-          </ul>
-        </nav>
-      {% endblock %}
-
 <!-- /main content -->
 
 {% block rightnav %}

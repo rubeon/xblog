@@ -1,13 +1,17 @@
 {% extends "xblog/post_archive.html" %}
 <!-- post_detail.html -->
 {% load markdown_deux_tags %}
-{% block extratitle %}{{ object.title }}{% endblock %}
-{% block yearnav %}&nbsp;&rsaquo;<a href="../../../">{{object.pub_date|date:"Y"}}</a>{% endblock %}{% block monthnav %}&nbsp;&rsaquo;<a href="../../">{{object.pub_date|date:"F"}}</a>{% endblock %}{% block daynav %}&nbsp;&rsaquo;<a href="../">{{object.pub_date|date:"d"}}</a>{% endblock %}
+{% block extratitle %} {{ object.title }}{% endblock %}
+{% block blogheaders %}<meta name="description" value="{{ site.name }}: {{ object.title }}">{% endblock %}
+
+{% block yearnav %}<li><a href="../../../">{{object.pub_date|date:"Y"}}</a>{% endblock %}
+{% block monthnav %}<li><a href="../../">{{object.pub_date|date:"F"}}</a></li>{% endblock %}
+{% block daynav %}<li><a href="../">{{object.pub_date|date:"d"}}</a></li>{% endblock %}
 {% block extrarightnav %}
 	
 {% endblock %}	
 {% block maincontent %}
-|{{ object.post_format }}|
+<!-- {{ object.post_format }} -->
 {% if object.post_format == 'video' %}
 <!-- a video! -->
 {% include "includes/post_video.txt" %}

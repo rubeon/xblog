@@ -6,12 +6,17 @@ blog.py
 Created by Eric Williams on 2007-02-21.
 """
 from django.contrib.auth.decorators import login_required
+from django.contrib.sites.models import Site
 from django.template import RequestContext, Context, loader
 from django.views.generic.list import ListView
 # from xcomments.models import FreeComment
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from xblog.models import Post, Blog, Author
-
+from django.views.generic.dates import YearArchiveView
+from django.views.generic.dates import MonthArchiveView
+from django.views.generic.dates import DayArchiveView
+from django.views.generic.dates import ArchiveIndexView
+from django.views.generic.dates import DateDetailView
 
 from xml.etree import ElementTree
 from xml.dom import minidom
@@ -72,6 +77,8 @@ def blog_overview(request):
     
     # thisblog = Blog.objects.all()[0]
     c = {}
+    c['site'] = Site.objects.get_current()
+    
     c['latest_posts'] = latest_posts
     c['pagetitle'] = "blog"
     c['pageclass'] = "blog"
@@ -204,3 +211,89 @@ def export_opml(request):
 #             c = Context({'error': error})
 #             response.write(t.render(c))
 #             return response
+
+class PostYearArchiveView(YearArchiveView):
+    queryset = Post.objects.filter(status="publish")
+    date_field = "pub_date"
+    make_object_list = True
+    allow_future = True
+    logger.debug(queryset)
+    Model = Post
+    
+    def get_context_data(self, **kwargs):
+        """
+        # makes custom context available in PostYearArchiveView
+        """
+        # Call the base implementation first to get a context
+        context = super(PostYearArchiveView, self).get_context_data(**kwargs)
+        context['site'] = Site.objects.get_current()
+        return context
+        
+class PostMonthArchiveView(MonthArchiveView):
+    queryset = Post.objects.filter(status="publish")
+    date_field = "pub_date"
+    make_object_list = True
+    allow_future = True
+    logger.debug(queryset)
+    Model = Post
+    
+    def get_context_data(self, **kwargs):
+        """
+        # makes custom context available in PostYearArchiveView
+        """
+        # Call the base implementation first to get a context
+        context = super(PostMonthArchiveView, self).get_context_data(**kwargs)
+        context['site'] = Site.objects.get_current()
+        return context
+
+class PostDayArchiveView(DayArchiveView):
+    queryset = Post.objects.filter(status="publish")
+    date_field = "pub_date"
+    make_object_list = True
+    allow_future = True
+    logger.debug(queryset)
+    Model = Post
+    
+    def get_context_data(self, **kwargs):
+        """
+        # makes custom context available in PostYearArchiveView
+        """
+        # Call the base implementation first to get a context
+        context = super(PostDayArchiveView, self).get_context_data(**kwargs)
+        context['site'] = Site.objects.get_current()
+        return context
+
+        
+class PostArchiveIndexView(ArchiveIndexView):
+    queryset = Post.objects.filter(status="publish")
+    date_field = "pub_date"
+    make_object_list = True
+    allow_future = True
+    logger.debug(queryset)
+    Model = Post
+    
+    def get_context_data(self, **kwargs):
+        """
+        # makes custom context available in PostYearArchiveView
+        """
+        # Call the base implementation first to get a context
+        context = super(PostArchiveIndexView, self).get_context_data(**kwargs)
+        context['site'] = Site.objects.get_current()
+        return context
+        
+class PostDateDetailView(DateDetailView):
+    queryset = Post.objects.filter(status="publish")
+    date_field = "pub_date"
+    make_object_list = True
+    allow_future = True
+    logger.debug(queryset)
+    Model = Post
+    
+    def get_context_data(self, **kwargs):
+        """
+        # makes custom context available in PostYearArchiveView
+        """
+        # Call the base implementation first to get a context
+        context = super(PostDateDetailView, self).get_context_data(**kwargs)
+        context['site'] = Site.objects.get_current()
+        return context

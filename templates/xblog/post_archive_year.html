@@ -1,28 +1,17 @@
-{% extends "xblog/blog_base.html" %}
-{% block pagetitle %}{{ thisblog.title }} Yearly Archive for {{ year }}{% endblock %}
+{% extends "xblog/post_archive.html" %}
+{% block extratitle %} {{ year.year }} {% endblock %}
+{% block blogheaders %}<meta name="description" content="{{ site.name }}: Yearly Archive for {{ year.year }} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}" />{% endblock %}
+{% block yearnav %}
+<li>{{ year.year }}</li>
+{% endblock %}
+
 {% block maincontent %}
+    {% block monthnav %}{% endblock %}
+    {% block daynav %}{% endblock %}
 
 	{% for object in object_list %}
-	{% ifchanged %}<h2><a href="{{ object.get_month_archive_url }}">{{ object.pub_date|date:"F Y"}}</a></h2>{% endifchanged %}    
-    {% include "includes/post_template.html" %}
-    
-	{% comment %}
-    {% get_free_comment_count for xblog.post object.id as comment_count %}
-	<!-- a post -->
-	<div id="post-{{ object.id }}" class="item entry">
-		<div class="itemhead">
-			<h3><a href="{{ object.get_absolute_url }}" title="{{ object.title }}">{{ object.title}}</a></h3>
-			<small class="metadata">
-				<span class="chronodata">Posted by <span class="vcard author">{{ object.author.get_profile.fullname }}</span> 
-				in 
-				<span class="entry-category">{{ object.categories.all|join:","}}</span> at {{ object.pub_date|date:"P" }} on {{ object.pub_date|date:"F j" }}<br />
-				<a class="commentslink" href="{{ object.get_absolute_url}}#comments" title="Comments on {{ object.title }}">{{ comment_count  }} Comments</a>  <a class="pingbacklink" href="{{ object.get_absolute_url }}#pingbacks" title="Pingbacks on {{ object.title }}">{{ object.get_pingback_count }} Pings</a>
-			</small>	
-		</div><!-- /itemhead -->
-	</div>
-	<!-- /a post -->
-    {% endcomment %}
-
+	{% ifchanged %}<h2><a href="{{ object.get_month_archive_url }}">{{ object.pub_date|date:"F Y"}}</a></h2>{% endifchanged %}
+    {% include "includes/post_template.txt" %}
 
 {% endfor %}
 {% endblock %}

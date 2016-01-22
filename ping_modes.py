@@ -220,6 +220,9 @@ def confirm_pingback(target_url, search_url, check_spam=True):
 
 def send_pings(post):
     logger.debug("send_pings entered")
+    if settings.DEBUG:
+        logger.warn("Not sending pings in debug")
+        return
     if post.status=='publish':
         # check for outgoing links.
         target_urls = []

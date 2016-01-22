@@ -18,7 +18,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User 
 
 from optparse import make_option
-from xblog.models import Category, Blog, Post, Author
+from xblog.models import Blog, Post, Author
 import sys
 import xmlrpclib
 import urllib
@@ -71,10 +71,90 @@ class Command(BaseCommand):
         """
         imports a remote blog via the WordPress API
         """
-        print args
-        print options
+        
+        if options.get("api_endpoint", None):
+            self.xmlrpc_import(args, options)
+        elif options.get('filename'):
+            self.json_import(args, options)
+    
+    def json_import(self, args, options):
+        """
+        Takes a json file of another xblog
+        
+        importantly, this script will try to sanitize it.
+        
+        Categories are imported as tags.
+        Blog posts are assigned to an existing user, so make sure that user exists.
+        
+        New owner is passed using --owner=username
+        
+        """
+        username = options.get('username')
+        filename = options.get('filename')
+        print "Parsing %s for %s" % (username, filename)        
+        owner = None
+        while not owner:
+            try:
+                owner = User.objects.get(username=username)
+                print "Found %s" % owner
+                print
+            except ObjectDoesNotExist:
+                print "User name '%s' not found" % username
+                print "Choose from one of the following:"
+                for user in User.objects.all():
+                    print "- %s" % user.username
+                print "[q] Quit"
+                username = raw_input('> ').strip()
+                if username.lower()=='q':
+                    sys.exit()
+                    
+        print "Proceeding with %s" % owner
+        
+        data = json.load(open(sys.argv[-1]))
+
+        new_data = []
+        bad_cats = [1, 4, 5]
+        for point in data:
+    
+            if point['model'] == 'xblog.category':
+                continue
+            if point['model'] == 'xblog.blog':
+                pprint( point)
+                point['fields']['owner'] = 6
+        
+            if point['model'] == 'xblog.author':
+                pprint(point)
+                point['fields']['user'] = 6
+
+            if point['model'] == 'xblog.post':
+                for category in point['fields']['categories']:
+                    if category in bad_cats:
+                        continue
+                print point['fields']['author']
+                point['fields']['author'] = 6
+
+    
+            # remove primary_category_name
+            for old_field in ["primary_category_name", "categories"]:
+        
+                if old_field in point.get('fields').keys():
+                    point['fields'].pop(old_field, None)
+            new_data.append(point)
+
+        if sys.argv[-1]!="new_data.json":
+            json.dump(new_data, open("new_data.json", 'w'), indent=4)
+
+        
+        
+        
+        
+    def xmlrpc_import(self, args, options ):
+        """
+        Sucks a blog over the internet using its XMLRPC protocol.
+        """
         blog_url = args[0]
         xblog_id = args[1]
+        
         if options.get("dump"):
             dry_run = True
             notify("Dumping %s to screen" % args[0])
@@ -82,7 +162,7 @@ class Command(BaseCommand):
         username = options.get("username") or raw_input("Username: ").strip()
         password = options.get("password") or getpass.getpass()
         
-        wp_url =  self.get_xmlrpc_url(args[0])
+        wp_url =  options.get('api_endpoint')
         if not wp_url:
             notify("Couldn't find API link in page %s" % blog_url)
             notify("Please re-run with '-x url_to_api_endpoint'")
