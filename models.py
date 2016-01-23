@@ -2,6 +2,7 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from django.contrib.auth.models import User 
 from django.core.mail import mail_managers, send_mail
+from django.core.validators import MinLengthValidator
 # from django.utils.text import truncate_html_words
 # replaced by the following
 from django.utils.text import Truncator
@@ -17,8 +18,12 @@ from django.db.models.signals import post_save
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
     if kwargs["created"]:
-        up = Author(user=user)
-        up.save()
+        # check if the profile already exists
+        if hasattr(user, 'author'):
+            return
+        else:
+            up = Author(user=user)
+            up.save()
 
 post_save.connect(create_profile, sender=User)
 
@@ -45,8 +50,19 @@ import markdown2
 import logging
 logger = logging.getLogger(__name__)
 
-
-
+def random_string(length=24):
+    """
+    generates a random string of characters for 
+    an API key, for example.
+    """
+    # create a pool of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    pool = list(string.uppercase) + list(string.lowercase) + [str(i) for i in range(0,10)]
+    # hmm... wouldn't it have been shorter to set pool to
+    # ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?
+    # next time...
+    res = "".join([pool[ord(c) % len(pool)] for c in os.urandom(length)])
+    return res
+    
 STATUS_CHOICES=(('draft','Draft'),('publish','Published'),('private','Private'))
 FORMAT_CHOICES=(('standard', 'Standard'), ('video', 'Video'), ('status','Status'),)
 # text filters
@@ -197,12 +213,31 @@ class Author(models.Model):
     about = models.TextField(blank=True)
     avatar_height = models.IntegerField(blank=True, null=True)
     avatar_width = models.IntegerField(blank=True, null=True)
+    # API-related stuff
+    remote_access_enabled = models.BooleanField(default=False)
+    remote_access_key = models.CharField(blank=True, max_length=100, validators=[MinLengthValidator(8)])
     
     def get_avatar_url(self):
         logger.debug("%s: %s" % (self, "Getting avatar url"))
         return self.avatar.url
+        
+    
+        
     def __str__(self):
         return "%s (%s)" % (self.fullname,self.user.username)
+        
+    def save(self):
+        """
+        special instructions on save
+        """
+        if self.id:
+            if self.remote_access_enabled:
+                if not self.remote_access_key:
+                    self.remote_access_key=random_string()
+
+        super(self.__class__, self).save()
+        
+        
 
 class Post(models.Model):
     """A Blog Entry, natch"""

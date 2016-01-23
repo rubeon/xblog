@@ -15,7 +15,7 @@ map an author to the logged-in guy
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.auth.models import User 
+from django.contrib.auth.models import User
 
 from optparse import make_option
 from xblog.models import Blog, Post, Author
@@ -55,7 +55,7 @@ def notify(msg):
 class Command(BaseCommand):
     """ Import blog posts from a remote blog """
     option_list = BaseCommand.option_list + (
-            make_option("-u", "--username", dest="username", default=[], metavar="username", help="User name for remote API endpoint"),
+            # make_option("-u", "--username", dest="username", default=[], metavar="username", help="User name for remote API endpoint"),
             make_option("-o", "--owner", dest="owner", metavar="ownername", help="Owner's Django user name"),
             make_option("-a", "--all", dest="all_blogs", action="store_true", help="Import all user blogs from API endpoint"),
             make_option("-x", "--api-endpoint", dest="api_endpoint", default=None, metavar="API endpoint", help="Direct URL for remote API endpoint"),
@@ -91,13 +91,19 @@ class Command(BaseCommand):
         """
         username = options.get('username')
         filename = options.get('filename')
+        try:
+            local_user = User.objects.get(username=options.get('owner'))
+        except ObjectDoesNotExist:
+            local_user = None
+
         print "Parsing %s for %s" % (username, filename)        
-        owner = None
+        # owner = None
+        owner = local_user
         while not owner:
             try:
                 owner = User.objects.get(username=username)
                 print "Found %s" % owner
-                print
+                
             except ObjectDoesNotExist:
                 print "User name '%s' not found" % username
                 print "Choose from one of the following:"
@@ -107,47 +113,47 @@ class Command(BaseCommand):
                 username = raw_input('> ').strip()
                 if username.lower()=='q':
                     sys.exit()
-                    
-        print "Proceeding with %s" % owner
+            
+        print "Proceeding with %s (id=%s)" % (owner, owner.id)
         
-        data = json.load(open(sys.argv[-1]))
+        data = json.load(open(options.get("filename")))
 
         new_data = []
-        bad_cats = [1, 4, 5]
+        bad_cats = [1, 4, 5] # specifically for YB; remove this
         for point in data:
     
             if point['model'] == 'xblog.category':
                 continue
             if point['model'] == 'xblog.blog':
                 pprint( point)
-                point['fields']['owner'] = 6
+                point['fields']['owner'] = owner.id
         
             if point['model'] == 'xblog.author':
                 pprint(point)
-                point['fields']['user'] = 6
+                print "Removing author record for %s" % point['fields']['fullname']
+                data.remove(point)
+                continue
 
             if point['model'] == 'xblog.post':
                 for category in point['fields']['categories']:
                     if category in bad_cats:
                         continue
-                print point['fields']['author']
-                point['fields']['author'] = 6
+                # print point['fields']['author']
+                point['fields']['author'] = owner.id
 
     
             # remove primary_category_name
             for old_field in ["primary_category_name", "categories"]:
-        
                 if old_field in point.get('fields').keys():
                     point['fields'].pop(old_field, None)
             new_data.append(point)
+            
+            # for point in new_data:
+            #     print point
+            
+            json.dump(new_data, open('new_data.json','w'), indent=4)
+            
 
-        if sys.argv[-1]!="new_data.json":
-            json.dump(new_data, open("new_data.json", 'w'), indent=4)
-
-        
-        
-        
-        
     def xmlrpc_import(self, args, options ):
         """
         Sucks a blog over the internet using its XMLRPC protocol.

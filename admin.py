@@ -36,6 +36,7 @@ class AuthorAdmin(BaseUserAdmin):
   
 admin.site.unregister(User)  
 admin.site.register(User, AuthorAdmin)
+
 # admin.site.register(Author, AuthorAdmin)
 
 # class CategoryAdmin(admin.ModelAdmin):
