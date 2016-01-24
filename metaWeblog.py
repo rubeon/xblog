@@ -816,4 +816,7 @@ def wp_newPost(user, blog_id, content):
     # set categories? Hmm... categories for posts seem to be legacy thinking
     # set tags
     return str(post.id)
-    
+
+@authenticated(pos=1)
+def wp_getCategories(user, blog_id):
+    return []

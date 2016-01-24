@@ -44,8 +44,6 @@ class AuthorListView(ListView):
     # shows the list of authors
     
     model = Author
-    
-    
 
 def template_preview(request, **kwargs):
     """
@@ -217,18 +215,29 @@ class PostYearArchiveView(YearArchiveView):
     date_field = "pub_date"
     make_object_list = True
     allow_future = True
-    logger.debug(queryset)
+
     Model = Post
     
     def get_context_data(self, **kwargs):
         """
         # makes custom context available in PostYearArchiveView
         """
+        print "get context data entered"
         # Call the base implementation first to get a context
         context = super(PostYearArchiveView, self).get_context_data(**kwargs)
         context['site'] = Site.objects.get_current()
         return context
         
+    def get_queryset(self):
+        print "get_queryset entererd..."
+        if hasattr(self, 'year'):
+            print "i has owner"
+            queryset = Post.objects.filter(author=self.owner)
+        else:
+            queryset = self.queryset
+        return queryset
+            
+    
 class PostMonthArchiveView(MonthArchiveView):
     queryset = Post.objects.filter(status="publish")
     date_field = "pub_date"
