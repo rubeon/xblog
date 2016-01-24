@@ -177,7 +177,7 @@ def metaWeblog_newPost(user, blogid, struct, publish="PUBLISH"):
     post.save()
     logger.info("Post %s saved" % post)
     logger.info("Setting Tags")
-    setTags(post, struct, tags="mt_keywords")
+    setTags(post, struct, key="mt_keywords")
     logger.debug("Handling Pings")
     logger.info("sending pings to host")
     send_pings(post)
@@ -577,11 +577,11 @@ def wp_getUsersBlogs(user):
     res = [
     {
     'isAdmin': True,
-    'url': "http://127.0.0.1:8000/", # blog.get_url(),
+    'url': "http://%s/blog/%s/" % (blog.site.domain, user.username),
     'blogid':str(blog.id),
     'blogName': blog.title,
     # 'xmlrpc': reverse("xmlrpc"),
-    'xmlrpc': "http://127.0.0.1:8000/xmlrpc/",
+    'xmlrpc': "https://%s/xmlrpc/" % blog.site.domain,
 
     } for blog in usersblogs
     ]
@@ -798,7 +798,7 @@ def wp_newPost(user, blog_id, content):
         pub_date = pub_date,
         status = content['post_status'],
         blog = blog,
-        author =user
+        author =user.author
     )
     
     post.save()
@@ -820,3 +820,4 @@ def wp_newPost(user, blog_id, content):
 @authenticated(pos=1)
 def wp_getCategories(user, blog_id):
     return []
+
